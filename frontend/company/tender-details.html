@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tender Requirements &amp; Specifications | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Offering Company / Bidder Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div class="mb-3">
+          <a href="/company/available-tenders.html" class="btn btn-sm btn-outline-secondary">
+            &larr; Back to Available Tenders
+          </a>
+        </div>
+        <div id="tender-details-box">Loading tender requirements...</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("COMPANY", "tender-details", "Tender Requirements & Mandatory Checklist");
+
+    async function loadTender() {
+      const tenderId = getQueryParam("tender_id");
+      const box = document.getElementById("tender-details-box");
+
+      if (!tenderId) {
+        box.innerHTML = `
+          <div class="gov-card p-4 text-center">
+            <div class="text-warning fs-3 mb-2">&#9888;</div>
+            <h5 class="fw-bold">No Tender Selected</h5>
+            <p class="text-muted small">Please choose a tender from the available tenders listing.</p>
+            <a href="/company/available-tenders.html" class="btn btn-primary btn-sm">Browse Available Tenders</a>
+          </div>
+        `;
+        return;
+      }
+
+      try {
+        const data = await apiRequest(`/api/tenders/${tenderId}`);
+        const t = data.tender;
+        if (!t) {
+          box.innerHTML = `<div class="alert alert-danger">Tender #${tenderId} could not be found.</div>`;
+          return;
+        }
+
+        const reqDocs = Array.isArray(t.required_documents) ? t.required_documents.join(", ") : (t.required_documents || "None specified");
+        const structReqs = t.structured_requirements || [];
+
+        box.innerHTML = `
+          <div class="gov-card p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start border-bottom pb-3 mb-3">
+              <div>
+                <span class="badge bg-secondary me-2">${t.tender_code}</span>
+                ${renderStatusBadge(t.status)}
+                <h4 class="fw-bold mt-2 mb-1">${t.title}</h4>
+                <div class="small text-muted">${t.department} &bull; Category: <strong>${t.category || "-"}</strong></div>
+              </div>
+              <div class="text-end">
+                <div class="small text-muted">Estimated Tender Value</div>
+                <div class="fs-4 fw-bold text-dark mb-2">${formatINR(t.estimated_value)}</div>
+                ${t.has_bidded
+                  ? `<div class="mb-2"><span class="badge bg-success py-2 px-3 fw-normal">&#10003; Requirement Already Bidded</span></div>
+                     <a href="/company/submission-status.html?bid_id=${t.existing_bid_id}" class="btn btn-success fw-semibold px-4">View Your Submitted Bid (${t.existing_bid_number})</a>`
+                  : `<a href="/company/apply-tender.html?tender_id=${t.id}" class="btn btn-primary fw-semibold px-4">Apply &amp; Submit Bid</a>`
+                }
+              </div>
+            </div>
+
+            ${t.has_bidded
+              ? `<div class="alert alert-success d-flex align-items-center justify-content-between p-3 mb-3 border border-success">
+                   <div>
+                     <strong>Notice:</strong> Your company has already submitted a bid for this tender requirement.
+                     <div class="small text-muted mt-1">Bid Reference: <strong>${t.existing_bid_number}</strong> &bull; Status: <strong>${t.existing_bid_status || 'SUBMITTED'}</strong></div>
+                   </div>
+                   <a href="/company/submission-status.html?bid_id=${t.existing_bid_id}" class="btn btn-sm btn-outline-success fw-semibold">View Submission Details &rarr;</a>
+                 </div>`
+              : ""
+            }
+
+            ${t.description ? `<p class="small text-muted mb-3">${t.description}</p>` : ""}
+
+            <div class="row g-3 mb-4 small">
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded border h-100">
+                  <div class="fw-bold text-dark mb-2">Eligibility &amp; Technical Requirements</div>
+                  <div><strong>Technical:</strong> ${t.technical_requirements || "-"}</div>
+                  <div class="mt-2"><strong>Eligibility:</strong> ${t.eligibility_requirements || "-"}</div>
+                  <div class="mt-2"><strong>OEM Clause:</strong> ${t.oem_requirements || "-"}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded border h-100">
+                  <div class="fw-bold text-dark mb-2">Statutory &amp; Documentary Checklist</div>
+                  <div><strong>Statutory:</strong> ${t.statutory_requirements || "-"}</div>
+                  <div class="mt-2"><strong>Make in India Local Content:</strong> Minimum <strong>${t.local_content_requirements}%</strong></div>
+                  <div class="mt-2"><strong>Required Documents:</strong> ${reqDocs}</div>
+                </div>
+              </div>
+            </div>
+
+            <h6 class="fw-bold mb-2">Structured Technical Thresholds Checked by AI Compliance Engine</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered small mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Category</th>
+                    <th>Parameter Name</th>
+                    <th>Comparison Rule</th>
+                    <th>Mandatory Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${structReqs.length === 0
+                    ? `<tr><td colspan="4" class="text-center text-muted py-2">No structured technical requirements defined for this tender.</td></tr>`
+                    : structReqs.map(r => `
+                        <tr>
+                          <td><span class="badge bg-secondary">${r.category}</span></td>
+                          <td class="fw-semibold">${r.parameter_name}</td>
+                          <td><code>${r.operator} ${r.required_value} ${r.unit || ""}</code></td>
+                          <td>${r.is_mandatory ? '<span class="badge bg-danger">Mandatory</span>' : '<span class="badge bg-light text-dark border">Optional</span>'}</td>
+                        </tr>
+                      `).join("")
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        box.innerHTML = `<div class="alert alert-danger">Error loading tender: ${err.message}</div>`;
+      }
+    }
+
+    loadTender();
+  </script>
+</body>
+</html>

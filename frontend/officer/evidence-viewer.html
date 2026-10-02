@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evidence Viewer | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Procurement Officer Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small fw-bold text-muted">Select Bid Evidence:</label>
+            <select id="bid-selector" class="form-select form-select-sm" style="width:360px;" onchange="window.location.href='/officer/evidence-viewer.html?bid_id='+this.value"></select>
+          </div>
+          <div class="d-flex gap-2">
+            <select id="status-filter" class="form-select form-select-sm" onchange="renderFilteredEvidence()">
+              <option value="ALL">Show All Checks &amp; Evidence</option>
+              <option value="NON_COMPLIANT">Non-Compliant Only</option>
+              <option value="NEEDS_REVIEW">Needs Review Only</option>
+              <option value="COMPLIANT">Compliant Only</option>
+            </select>
+            <a id="bid-review-link" href="/officer/bid-details.html" class="btn btn-sm btn-primary">Officer Review Sign-off</a>
+          </div>
+        </div>
+
+        <div id="ev-alert"></div>
+        <div id="evidence-cards-container">Loading page-level supporting evidence...</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("PROCUREMENT_OFFICER", "evidence-viewer", "Evidence Viewer (Page-Level Document Traceability)");
+
+    let currentBidId = getQueryParam("bid_id") || "2"; // Default to Bid #2 (SSD 256 GB < 512 GB example) if unspecified
+    let cachedChecks = [];
+
+    async function markSingleCheckReviewed(checkId, btn) {
+      btn.disabled = true;
+      try {
+        await apiRequest(`/api/compliance-results/${checkId}/review`, {
+          method: "PUT",
+          body: JSON.stringify({ is_reviewed: true, officer_comment: "Evidence verified by Procurement Officer" }),
+        });
+        showAlert("ev-alert", "Check item marked as reviewed in Audit Trail.", "success");
+        await loadEvidence();
+      } catch (err) {
+        showAlert("ev-alert", err.message);
+        btn.disabled = false;
+      }
+    }
+
+    function renderFilteredEvidence() {
+      const filterVal = document.getElementById("status-filter").value;
+      const container = document.getElementById("evidence-cards-container");
+      const list = filterVal === "ALL" ? cachedChecks : cachedChecks.filter(c => c.status === filterVal);
+
+      if (!list.length) {
+        container.innerHTML = `<div class="gov-card p-4 text-muted">No compliance checks match filter "${filterVal}".</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(c => {
+        const ev = (c.evidence && c.evidence[0]) || {};
+        return `
+          <div class="gov-card p-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-2 mb-2">
+              <div>
+                <span class="badge bg-secondary me-2">${c.category}</span>
+                <strong class="text-dark">${c.check_name}</strong>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                ${renderStatusBadge(c.status)}
+                ${c.is_reviewed
+                  ? `<span class="badge bg-success-subtle text-success border">Officer Reviewed &#10003;</span>`
+                  : `<button class="btn btn-sm btn-outline-success py-0" onclick="markSingleCheckReviewed(${c.id}, this)">Mark Issue Reviewed</button>`}
+              </div>
+            </div>
+            <div class="row g-3 small">
+              <div class="col-md-5">
+                <div class="p-2 bg-light rounded border h-100">
+                  <div><strong>Requirement:</strong> ${c.requirement_text}</div>
+                  <div class="mt-1"><strong>Submitted:</strong> <span class="fw-bold">${c.submitted_text}</span></div>
+                  <div class="mt-1"><strong>Evidence Source:</strong> <code>${ev.document_name || "Bid Submission"}</code>, <strong>Page: ${ev.page_number || 1}</strong></div>
+                  <div class="mt-1"><strong>Reason:</strong> ${c.reason}</div>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <div class="small fw-bold text-muted mb-1">Extracted Evidence Snippet (${ev.document_name || "Document"}, Page ${ev.page_number || 1}):</div>
+                <div class="ocr-snippet-box" style="max-height:110px;">${ev.extracted_snippet || c.reason}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadEvidence() {
+      try {
+        const allBidsRes = await apiRequest("/api/bids");
+        const allBids = allBidsRes.bids || [];
+        if (allBids.length && !getQueryParam("bid_id")) {
+          const sampleBid = allBids.find(b => b.bid_number.includes("1002")) || allBids[0];
+          currentBidId = String(sampleBid.id);
+        }
+        document.getElementById("bid-selector").innerHTML = allBids.map(b => `
+          <option value="${b.id}" ${String(b.id) === String(currentBidId) ? "selected" : ""}>
+            ${b.bid_number} — ${b.company_name} (${b.overall_compliance_score}%)
+          </option>
+        `).join("");
+        document.getElementById("bid-review-link").href = `/officer/bid-details.html?bid_id=${currentBidId}`;
+
+        const data = await apiRequest(`/api/bids/${currentBidId}/compliance`);
+        cachedChecks = data.compliance_results || [];
+        renderFilteredEvidence();
+      } catch (err) {
+        showAlert("ev-alert", err.message);
+      }
+    }
+    loadEvidence();
+  </script>
+</body>
+</html>

@@ -1,0 +1,608 @@
+/* ==========================================================================
+   GeM Procurement Bid Compliance Verification Platform (SIH 26100)
+   Enterprise / Government Procurement Stylesheet
+   ========================================================================== */
+
+:root {
+  /* Brand Reference Yellow - Exactly matching the Sign In button */
+  --primary-yellow: #ffc107;
+  --primary-yellow-hover: #ffca2c;
+  --primary-yellow-text: #212529;
+
+  --gov-navy: #0f2942;
+  --gov-blue: #1e3a5f;
+  --gov-accent: #c25e00;
+  --gov-bg: #f4f6f9;
+  --gov-card-border: #dce3ec;
+  --gov-text-main: #1e293b;
+  --gov-text-muted: #526071;
+  --status-compliant: #15803d;
+  --status-noncompliant: #b91c1c;
+  --status-review: #b45309;
+  --status-na: #64748b;
+}
+
+body {
+  background-color: var(--gov-bg);
+  color: var(--gov-text-main);
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+/* Top Government Identity Strip */
+.gov-top-strip {
+  background-color: #091929;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  padding: 0.35rem 0;
+  border-bottom: 2px solid var(--gov-accent);
+}
+
+/* Public Navbar */
+.gov-navbar {
+  background-color: var(--gov-navy);
+  box-shadow: 0 2px 6px rgba(15, 41, 66, 0.12);
+}
+
+.gov-navbar .navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #ffffff !important;
+}
+
+.gov-navbar .nav-link {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-weight: 500;
+  padding: 0.5rem 0.9rem !important;
+}
+
+.gov-navbar .nav-link:hover,
+.gov-navbar .nav-link.active {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Hero Section (Enterprise / Government Style) */
+.gov-hero {
+  background-color: var(--gov-navy);
+  color: #ffffff;
+  padding: 3.5rem 0;
+  border-bottom: 4px solid var(--gov-accent);
+}
+
+/* Authenticated Layout with Independent Scrolling */
+body:has(.app-wrapper) {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-wrapper {
+  display: flex;
+  height: calc(100vh - 34px);
+  max-height: calc(100vh - 34px);
+  overflow: hidden;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* Left Sidebar - Independent Container */
+.app-sidebar {
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
+  background-color: var(--gov-navy);
+  color: #f8fafc;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 2px solid #1e3a5f;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+}
+
+.app-sidebar .sidebar-brand {
+  padding: 1.1rem 1.25rem;
+  background-color: #091929;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.app-sidebar .sidebar-nav-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.app-sidebar .sidebar-nav-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.app-sidebar .sidebar-nav-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.app-sidebar .nav-section-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #94a3b8;
+  padding: 0.9rem 1.25rem 0.35rem;
+  font-weight: 700;
+}
+
+.app-sidebar .nav-link {
+  color: #cbd5e1;
+  padding: 0.62rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, color 0.2s ease, box-shadow 0.22s ease;
+  transform: translateX(0);
+}
+
+.app-sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  transform: translateX(4px);
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+.app-sidebar .nav-link.active {
+  background-color: var(--gov-blue);
+  color: #ffffff;
+  border-left-color: #f59e0b;
+  font-weight: 600;
+}
+
+.sidebar-user-footer {
+  background-color: #081523;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  flex-shrink: 0;
+  padding: 0.45rem 0.65rem;
+}
+
+.sidebar-profile-card {
+  transition: all 0.15s ease-in-out;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  min-width: 0;
+  border: 1px solid transparent;
+}
+
+.sidebar-profile-card:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-profile-card.active-profile {
+  background-color: var(--gov-blue);
+  border-color: #f59e0b;
+}
+
+.avatar-circle-sm {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0f2942;
+  font-weight: 800;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  user-select: none;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.hover-logout {
+  color: #94a3b8 !important;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.hover-logout:hover {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.18);
+}
+
+/* Right Main Area - Independent Scroll Container */
+.app-main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #f1f5f9;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.app-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-main::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.app-main::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.app-main::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.app-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--gov-card-border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.app-content {
+  padding: 1.5rem;
+  flex-grow: 1;
+}
+
+/* Enterprise Cards & KPIs with smooth rounded corners */
+.gov-card {
+  background: #ffffff;
+  border: 1px solid var(--gov-card-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(15, 41, 66, 0.04);
+  overflow: hidden;
+}
+
+.gov-card-header {
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--gov-card-border);
+  padding: 0.85rem 1.25rem;
+  font-weight: 600;
+  color: var(--gov-navy);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--gov-card-border);
+  border-left: 4px solid var(--gov-navy);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+}
+
+.kpi-card.kpi-success { border-left-color: var(--status-compliant); }
+.kpi-card.kpi-warning { border-left-color: #fbbf24; }
+.kpi-card.kpi-danger  { border-left-color: #f87171; }
+
+.kpi-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--gov-text-muted);
+  letter-spacing: 0.4px;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--gov-navy);
+  margin-top: 0.2rem;
+}
+
+/* Status Badges - Lighter, softer tones with high readability */
+.badge-compliant, .badge.bg-success {
+  background-color: #f0fdf4 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+}
+
+.badge-noncompliant, .badge.bg-danger, .badge.bg-danger-subtle {
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+}
+
+.badge-review, .badge.bg-warning {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+}
+
+.badge-na {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+}
+
+/* Soft Alert Banners for Certificates */
+.cert-alert-danger, .alert-danger-soft, .alert-danger {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #991b1b !important;
+  border-radius: 12px !important;
+}
+
+.cert-alert-warning, .alert-warning-soft, .alert-warning {
+  background-color: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+  color: #92400e !important;
+  border-radius: 12px !important;
+}
+
+.cert-alert-success, .alert-success-soft, .alert-success {
+  background-color: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #166534 !important;
+  border-radius: 12px !important;
+}
+
+/* Soft Row Highlights for Certificate and Technical tables */
+.table-danger, tr.table-danger {
+  --bs-table-bg: #fff5f5 !important;
+  --bs-table-striped-bg: #fef2f2 !important;
+  color: #991b1b !important;
+  background-color: #fff5f5 !important;
+}
+
+.table-warning, tr.table-warning {
+  --bs-table-bg: #fffdf5 !important;
+  --bs-table-striped-bg: #fffbeb !important;
+  color: #92400e !important;
+  background-color: #fffdf5 !important;
+}
+
+.border-danger-soft {
+  border-left: 4px solid #f87171 !important;
+}
+
+.border-warning-soft {
+  border-left: 4px solid #fbbf24 !important;
+}
+
+.badge-danger-soft {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fca5a5 !important;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.badge-warning-soft {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* Left-Side Interactive Hover Animation (Subtle Elevation & Pop-out) */
+.interactive-item {
+  transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.24s ease, background-color 0.24s ease;
+  border-radius: 12px;
+}
+
+.interactive-item:hover {
+  transform: translateY(-2px) scale(1.006);
+  box-shadow: 0 6px 18px rgba(15, 41, 66, 0.08);
+  border-color: #93c5fd !important;
+  background-color: #ffffff !important;
+}
+
+.credential-row {
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s ease, box-shadow 0.22s ease, border-color 0.2s ease;
+}
+
+.credential-row:hover {
+  transform: translateX(6px) translateY(-1px);
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(15, 41, 66, 0.07);
+}
+
+.table-gov tbody tr {
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s ease;
+}
+
+.table-gov tbody tr:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(15, 41, 66, 0.07);
+  position: relative;
+  z-index: 2;
+  background-color: #f8fafc;
+}
+
+/* Decision Support Banner */
+.decision-support-banner {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+  color: #78350f;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Workflow Stepper */
+.workflow-step {
+  background: #ffffff;
+  border: 1px solid var(--gov-card-border);
+  border-top: 3px solid var(--gov-navy);
+  border-radius: 5px;
+  padding: 1rem;
+  text-align: center;
+  height: 100%;
+}
+
+.workflow-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--gov-navy);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Tables */
+.table-gov thead th {
+  background-color: #f1f5f9;
+  color: var(--gov-navy);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid var(--gov-card-border);
+  padding: 0.75rem;
+}
+
+.table-gov tbody td {
+  vertical-align: middle;
+  padding: 0.75rem;
+}
+
+/* Preformatted OCR snippet box */
+.ocr-snippet-box {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 0.82rem;
+  padding: 0.85rem;
+  border-radius: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 991.98px) {
+  .app-wrapper {
+    flex-direction: column;
+  }
+  .app-sidebar {
+    width: 100%;
+  }
+}
+
+/* Disable duplicate native browser password reveal eye icon (Edge, Chrome, Webkit) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+input[type="password"]::-webkit-contacts-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+}
+
+/* ==========================================================================
+   BidVerify Enterprise Brand Pill (Matches Sign In Button Reference Yellow)
+   ========================================================================== */
+.bidverify-pill-brand,
+.bidverify-pill-brand.pill-sm,
+.bidverify-pill-brand.pill-lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-yellow) !important;
+  color: var(--primary-yellow-text) !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+  padding: 0.28rem 0.85rem !important;
+  border-radius: 9999px !important;
+  border: 1px solid var(--primary-yellow) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  user-select: none;
+  text-decoration: none !important;
+  white-space: nowrap;
+  vertical-align: middle;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.bidverify-pill-brand:hover,
+.bidverify-pill-brand.pill-sm:hover,
+.bidverify-pill-brand.pill-lg:hover {
+  opacity: 0.95;
+  background-color: var(--primary-yellow-hover, #ffca2c) !important;
+  color: var(--primary-yellow-text) !important;
+}
+
+/* Explicitly link Sign In button styling with shared primary-yellow variable */
+.btn-warning {
+  --bs-btn-bg: var(--primary-yellow);
+  --bs-btn-border-color: var(--primary-yellow);
+  --bs-btn-hover-bg: var(--primary-yellow-hover, #ffca2c);
+  --bs-btn-hover-border-color: #ffc720;
+}
+
+.bidverify-portal-tag {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

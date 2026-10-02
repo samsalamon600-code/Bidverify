@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Bid Documents | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Offering Company / Bidder Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small fw-bold text-muted">Select Your Bid:</label>
+            <select id="bid-selector" class="form-select form-select-sm" style="width:340px;" onchange="window.location.href='/company/upload-documents.html?bid_id='+this.value"></select>
+          </div>
+          <a id="status-link" href="/company/submission-status.html" class="btn btn-sm btn-primary">View Submission &amp; Verification Status</a>
+        </div>
+
+        <div id="upload-alert"></div>
+
+        <div id="tender-required-docs-checklist"></div>
+
+        <div class="gov-card p-4 mb-4">
+          <h6 class="fw-bold text-dark mb-2">Upload Statutory &amp; Technical Bid Documents (Multipart/Form-Data)</h6>
+          <p class="small text-muted mb-3">
+            Validates file format (<code>pdf, png, jpg, jpeg, txt, doc, docx</code>), max file size (25 MB), duplicate filenames, and 0-byte empty files.
+            Uploaded files are automatically analyzed by Intelligent Document Analysis &amp; Verification Engine.
+          </p>
+          <form id="doc-upload-form" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Document Category</label>
+                <select name="declared_doc_type" class="form-select">
+                  <option value="Technical Bid">Technical Bid</option>
+                  <option value="GST Certificate">GST Certificate</option>
+                  <option value="PAN">PAN</option>
+                  <option value="Udyam/MSME Certificate">Udyam/MSME Certificate</option>
+                  <option value="Company Registration">Company Registration</option>
+                  <option value="OEM Authorization">OEM Authorization</option>
+                  <option value="Startup India Certificate">Startup India Certificate</option>
+                  <option value="NSIC Certificate">NSIC Certificate</option>
+                  <option value="EPFO">EPFO Documents</option>
+                  <option value="ESIC">ESIC Documents</option>
+                  <option value="Product Certificate">Product Certificate</option>
+                  <option value="Other">Other Tender-Required Document</option>
+                </select>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label small fw-semibold">Select File(s) to Upload</label>
+                <input type="file" name="documents" class="form-control" multiple required accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx" />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" id="upload-btn" class="btn btn-primary w-100 fw-semibold">
+                  Upload &amp; Process Documents
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="gov-card">
+          <div class="gov-card-header">
+            <span>Uploaded Documents &amp; Automated Classification</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-gov table-hover mb-0 small">
+              <thead>
+                <tr>
+                  <th>Original Filename</th>
+                  <th>Declared Category</th>
+                  <th>AI Detected Category</th>
+                  <th>Classification Conf.</th>
+                  <th>Processing Engine</th>
+                  <th>Extraction Confidence</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="uploaded-docs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Document Analysis & Inline Viewer Modal -->
+  <div class="modal fade" id="docPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="modal-title fw-bold text-primary mb-0">DOCUMENT VIEWER &amp; ANALYSIS</h6>
+            <span class="badge bg-secondary" id="modalDocBadgeCategory">--</span>
+            <span class="small text-muted" id="modalDocTitle"></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <!-- Navigation Tabs -->
+          <ul class="nav nav-pills mb-3 border-bottom pb-2" id="docModalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-semibold" id="tab-doc-view-btn" data-bs-toggle="pill" data-bs-target="#tab-doc-view" type="button" role="tab">
+                📄 Original Document Viewer
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold" id="tab-doc-ocr-btn" data-bs-toggle="pill" data-bs-target="#tab-doc-ocr" type="button" role="tab">
+                🔍 Extracted Data &amp; Intelligence
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="docModalTabsContent">
+            <!-- TAB 1: ORIGINAL DOCUMENT VIEWER -->
+            <div class="tab-pane fade show active" id="tab-doc-view" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center p-2 mb-2 bg-light rounded border small">
+                <div>
+                  <span class="fw-semibold">Document:</span> <span id="viewerDocFilename" class="text-dark fw-bold"></span>
+                  <span class="text-muted ms-2">(<span id="viewerDocSize">--</span>)</span>
+                </div>
+                <div class="d-flex gap-2">
+                  <a id="viewerOpenNewTabBtn" href="#" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2">
+                    🗗 Open in New Tab
+                  </a>
+                  <a id="viewerDownloadBtn" href="#" target="_blank" class="btn btn-sm btn-primary py-1 px-2">
+                    ⬇ Download Original File
+                  </a>
+                </div>
+              </div>
+
+              <!-- Viewer Container -->
+              <div id="viewerContainer" class="border rounded bg-dark d-flex align-items-center justify-content-center" style="min-height: 580px; position: relative;">
+                <!-- Iframe for PDF and Web Docs -->
+                <iframe id="docViewerIframe" src="" style="width: 100%; height: 600px; border: none; display: none; background: #fff;" allowfullscreen></iframe>
+                
+                <!-- Image Tag for PNG/JPG/JPEG/WEBP -->
+                <div id="docViewerImgContainer" class="p-3 text-center w-100" style="display: none; max-height: 600px; overflow: auto; background: #2a2a2a;">
+                  <img id="docViewerImg" src="" alt="Document Preview" class="img-fluid rounded shadow" style="max-height: 560px; object-fit: contain;" />
+                </div>
+
+                <!-- Text / Fallback Container -->
+                <div id="docViewerTextContainer" class="p-3 w-100 bg-white" style="display: none; height: 600px; overflow-y: auto;">
+                  <div class="alert alert-info py-2 small mb-2">Displaying direct text content from document:</div>
+                  <pre id="docViewerTextPre" class="small mb-0" style="white-space: pre-wrap; font-family: monospace; font-size: 0.84rem;"></pre>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="docViewerLoading" class="text-white text-center py-5">
+                  <div class="spinner-border text-primary mb-2" role="status"></div>
+                  <div class="small">Loading document preview...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: DATA EXTRACTION & STRUCTURED DATA -->
+            <div class="tab-pane fade" id="tab-doc-ocr" role="tabpanel">
+              <!-- Processing Overview Grid -->
+              <div class="p-3 bg-light rounded border mb-3">
+                <div class="row g-2 small">
+                  <div class="col-sm-6">
+                    <div><strong>Processing Engine:</strong> <span class="badge bg-primary" id="modalDocOcrEngine">Document Intelligence Engine</span></div>
+                    <div><strong>Processing Status:</strong> <span id="modalDocOcrStatus" class="badge bg-success">Completed</span></div>
+                    <div><strong>Pages Processed:</strong> <span id="modalDocPages" class="fw-bold">1</span></div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div><strong>Text Extracted:</strong> <span id="modalDocExtracted" class="fw-bold text-success">Yes</span></div>
+                    <div><strong>Extraction Confidence:</strong> <span id="modalDocConfidenceBadge" class="badge bg-success">--</span></div>
+                    <div><strong>AI Classified Category:</strong> <span id="modalDocCategory" class="fw-semibold text-dark"></span> (<span id="modalDocConfidence"></span>)</div>
+                  </div>
+                </div>
+                <div id="modalOcrWarning" class="alert alert-warning py-2 px-3 small mt-3 mb-0 d-none">
+                  <strong>⚠ Low Extraction Confidence Alert:</strong> Extracted text confidence is below the 60% threshold. Human verification required before procurement decisions.
+                </div>
+              </div>
+
+              <!-- Structured Extracted Entities -->
+              <div class="mb-3">
+                <h6 class="fw-bold small text-muted mb-2 text-uppercase">Important Extracted Information:</h6>
+                <div id="modalStructuredEntities" class="border rounded p-2 bg-white small">
+                  <div class="text-muted">Loading extracted data...</div>
+                </div>
+              </div>
+
+              <!-- Extracted Text Viewer -->
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold small text-muted mb-0 text-uppercase">Extracted Document Text:</h6>
+                  <span class="small text-muted" id="modalDocTextLength"></span>
+                </div>
+                <pre id="modalDocText" class="p-3 bg-light rounded border small mb-0" style="white-space: pre-wrap; max-height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.82rem;"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("COMPANY", "upload-documents", "Upload & Manage Bid Documents");
+
+    let currentBidId = getQueryParam("bid_id") || "";
+    let loadedDocsMap = {};
+
+    function renderExtractedEntities(doc, ext) {
+      const struct = ext.structured_data || {};
+      let rows = [];
+      if (struct.gstin) {
+        const val = typeof struct.gstin === 'object' ? struct.gstin.value : struct.gstin;
+        const conf = typeof struct.gstin === 'object' ? struct.gstin.confidence : null;
+        rows.push({ label: "GSTIN", val: val, conf: conf });
+      }
+      if (struct.pan_number) {
+        const val = typeof struct.pan_number === 'object' ? struct.pan_number.value : struct.pan_number;
+        const conf = typeof struct.pan_number === 'object' ? struct.pan_number.confidence : null;
+        rows.push({ label: "Corporate PAN", val: val, conf: conf });
+      }
+      if (struct.udyam_number) {
+        const val = typeof struct.udyam_number === 'object' ? struct.udyam_number.value : struct.udyam_number;
+        const conf = typeof struct.udyam_number === 'object' ? struct.udyam_number.confidence : null;
+        rows.push({ label: "Udyam / MSME Registration", val: val, conf: conf });
+      }
+      if (struct.company_name) {
+        const val = typeof struct.company_name === 'object' ? struct.company_name.value : struct.company_name;
+        const conf = typeof struct.company_name === 'object' ? struct.company_name.confidence : null;
+        rows.push({ label: "Company / Entity Name", val: val, conf: conf });
+      }
+      if (struct.dates && struct.dates.length) {
+        rows.push({ label: "Detected Dates", val: struct.dates.join(", "), conf: null });
+      }
+      if (struct.monetary_values && struct.monetary_values.length) {
+        rows.push({ label: "Detected Monetary Values", val: struct.monetary_values.join(", "), conf: null });
+      }
+      if (struct.technical_specifications && Object.keys(struct.technical_specifications).length) {
+        Object.entries(struct.technical_specifications).forEach(([k, v]) => {
+          rows.push({ label: `Spec: ${k}`, val: `${v.value || ""} ${v.unit || ""}`.trim(), conf: null });
+        });
+      }
+
+      if (!rows.length) {
+        return `<div class="text-muted fst-italic p-2">No key entity records found in extraction metadata. Full document OCR text is displayed below.</div>`;
+      }
+
+      return `
+        <table class="table table-sm table-bordered mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th style="width:30%;">Entity / Field</th>
+              <th style="width:45%;">Extracted Value</th>
+              <th style="width:25%;">Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td class="fw-semibold text-dark">${r.label}</td>
+                <td class="font-monospace text-primary fw-bold">${r.val}</td>
+                <td>${r.conf ? `<span class="badge ${r.conf >= 0.60 ? 'bg-success' : 'bg-danger'}">${Math.round(r.conf * 100)}%</span>` : `<span class="text-muted">Extracted (100%)</span>`}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function viewDocPreview(docId, initialTab = 'view') {
+      const doc = loadedDocsMap[docId];
+      if (!doc) return;
+
+      const ext = doc.extraction || (doc.extractions && doc.extractions[0]) || {};
+      const rawText = ext.raw_text || doc.raw_text || doc.extracted_text || "";
+      const ocrConf = doc.ocr_confidence !== undefined && doc.ocr_confidence !== null ? doc.ocr_confidence : (ext.extraction_confidence || 0.9);
+      const isLowConf = ocrConf > 0 && ocrConf < 0.60;
+
+      // Header info
+      document.getElementById("modalDocTitle").textContent = doc.original_filename;
+      document.getElementById("modalDocBadgeCategory").textContent = doc.detected_doc_type || doc.declared_doc_type || "Document";
+      document.getElementById("viewerDocFilename").textContent = doc.original_filename;
+      document.getElementById("viewerDocSize").textContent = doc.file_size_bytes ? `${(doc.file_size_bytes / 1024).toFixed(1)} KB` : "Standard";
+
+      const token = Auth.getToken();
+      const viewUrl = `/api/documents/${doc.id}/view?token=${encodeURIComponent(token)}`;
+      const downloadUrl = `/api/documents/${doc.id}/download?token=${encodeURIComponent(token)}`;
+
+      document.getElementById("viewerOpenNewTabBtn").href = viewUrl;
+      document.getElementById("viewerDownloadBtn").href = downloadUrl;
+
+      // Setup Document Viewer elements
+      const iframeEl = document.getElementById("docViewerIframe");
+      const imgContainer = document.getElementById("docViewerImgContainer");
+      const imgEl = document.getElementById("docViewerImg");
+      const textContainer = document.getElementById("docViewerTextContainer");
+      const textPre = document.getElementById("docViewerTextPre");
+      const loadingEl = document.getElementById("docViewerLoading");
+
+      iframeEl.style.display = "none";
+      iframeEl.src = "";
+      imgContainer.style.display = "none";
+      imgEl.src = "";
+      textContainer.style.display = "none";
+      loadingEl.style.display = "block";
+
+      const fileExt = (doc.original_filename.split('.').pop() || '').toLowerCase();
+      const isImage = ["png", "jpg", "jpeg", "webp"].includes(fileExt);
+      const isPdf = fileExt === "pdf";
+
+      setTimeout(() => {
+        loadingEl.style.display = "none";
+        if (isImage) {
+          imgEl.src = viewUrl;
+          imgContainer.style.display = "block";
+        } else if (isPdf) {
+          iframeEl.src = viewUrl;
+          iframeEl.style.display = "block";
+        } else {
+          textPre.textContent = rawText || `File: ${doc.original_filename}\nFormat: ${fileExt}\nClick 'Open in New Tab' or 'Download' to view outside.`;
+          textContainer.style.display = "block";
+        }
+      }, 150);
+
+      // Setup OCR Tab
+      document.getElementById("modalDocOcrEngine").textContent = "Document Intelligence Engine";
+      document.getElementById("modalDocOcrStatus").textContent = doc.processing_status || "Completed";
+      document.getElementById("modalDocPages").textContent = doc.page_count || 1;
+      document.getElementById("modalDocExtracted").textContent = rawText ? "Yes" : "No";
+
+      const confBadge = document.getElementById("modalDocConfidenceBadge");
+      const confPct = Math.round(ocrConf * 100);
+      confBadge.textContent = `${confPct}%`;
+      confBadge.className = isLowConf ? "badge badge-danger-soft" : "badge badge-compliant";
+
+      const warningEl = document.getElementById("modalOcrWarning");
+      if (isLowConf) {
+        warningEl.classList.remove("d-none");
+      } else {
+        warningEl.classList.add("d-none");
+      }
+
+      document.getElementById("modalDocCategory").textContent = doc.detected_doc_type || doc.declared_doc_type || "N/A";
+      document.getElementById("modalDocConfidence").textContent = `${Math.round((doc.classification_confidence || 0.9) * 100)}%`;
+
+      document.getElementById("modalStructuredEntities").innerHTML = renderExtractedEntities(doc, ext);
+      document.getElementById("modalDocText").textContent = rawText || "No extracted text available for this document.";
+      document.getElementById("modalDocTextLength").textContent = `${rawText.length} characters`;
+
+      // Switch to requested initial tab
+      if (initialTab === 'ocr') {
+        const ocrTabBtn = document.getElementById("tab-doc-ocr-btn");
+        if (ocrTabBtn) {
+          const bsTab = bootstrap.Tab.getOrCreateInstance(ocrTabBtn);
+          bsTab.show();
+        }
+      } else {
+        const viewTabBtn = document.getElementById("tab-doc-view-btn");
+        if (viewTabBtn) {
+          const bsTab = bootstrap.Tab.getOrCreateInstance(viewTabBtn);
+          bsTab.show();
+        }
+      }
+
+      const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("docPreviewModal"));
+      modal.show();
+    }
+
+    async function loadBidDocs() {
+      const tbody = document.getElementById("uploaded-docs-tbody");
+      try {
+        const myBidsRes = await apiRequest("/api/bids");
+        const myBids = myBidsRes.bids || [];
+        if (!myBids.length) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No bids found. Please <a href="/company/available-tenders.html">apply for a tender</a> first.</td></tr>`;
+          return;
+        }
+        if (!currentBidId || !myBids.some(b => String(b.id) === String(currentBidId))) {
+          currentBidId = String(myBids[0].id);
+        }
+
+        document.getElementById("bid-selector").innerHTML = myBids.map(b => `
+          <option value="${b.id}" ${String(b.id) === String(currentBidId) ? "selected" : ""}>
+            ${b.bid_number} — ${b.tender_code}
+          </option>
+        `).join("");
+        document.getElementById("status-link").href = `/company/submission-status.html?bid_id=${currentBidId}`;
+
+        const data = await apiRequest(`/api/bids/${currentBidId}`);
+        const docs = data.bid.documents || [];
+        loadedDocsMap = {};
+        docs.forEach(d => { loadedDocsMap[d.id] = d; });
+
+        // Render Tender Required Documents Checklist (as specified by Procurement Officer)
+        const reqDocs = (data.bid.tender && data.bid.tender.required_documents) || [];
+        const checklistEl = document.getElementById("tender-required-docs-checklist");
+        if (checklistEl) {
+          if (reqDocs.length) {
+            const uploadedTypes = new Set(docs.map(d => (d.detected_doc_type || d.declared_doc_type || '').toLowerCase()));
+            checklistEl.innerHTML = `
+              <div class="card border border-primary-subtle shadow-sm mb-4">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                  <span class="fw-bold small text-dark">📋 Tender Mandatory Documents Checklist (Specified by Officer)</span>
+                  <span class="small text-muted">${docs.length} uploaded</span>
+                </div>
+                <div class="card-body p-3">
+                  <div class="d-flex flex-wrap gap-2">
+                    ${reqDocs.map(rd => {
+                      const isUp = uploadedTypes.has(rd.toLowerCase()) || docs.some(d => (d.original_filename || '').toLowerCase().includes(rd.toLowerCase().split(' ')[0]));
+                      return `
+                        <div class="border rounded px-3 py-2 d-flex align-items-center gap-2 ${isUp ? 'bg-success-subtle border-success-subtle text-success-emphasis' : 'bg-light border-warning text-dark'}">
+                          <span class="${isUp ? 'text-success fw-bold' : 'text-warning-emphasis fw-bold'}">${isUp ? '✓' : '○'}</span>
+                          <span class="small fw-semibold">${rd}</span>
+                          <span class="badge ${isUp ? 'bg-success' : 'bg-secondary'} ms-1">${isUp ? 'Uploaded' : 'Pending'}</span>
+                        </div>
+                      `;
+                    }).join("")}
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            checklistEl.innerHTML = "";
+          }
+        }
+
+        if (!docs.length) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No documents uploaded for this bid yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = docs.map(d => {
+          const ocrConf = d.ocr_confidence !== undefined && d.ocr_confidence !== null ? d.ocr_confidence : 0.9;
+          const confPct = Math.round(ocrConf * 100);
+          const isLow = ocrConf > 0 && ocrConf < 0.60;
+          return `
+            <tr>
+              <td class="fw-semibold">
+                <a href="javascript:void(0)" onclick="viewDocPreview(${d.id}, 'view')" class="text-primary text-decoration-none fw-bold" title="Click to view file">
+                  📄 ${d.original_filename}
+                </a>
+              </td>
+              <td>${d.declared_doc_type || "-"}</td>
+              <td><span class="badge bg-info text-dark">${d.detected_doc_type}</span></td>
+              <td>${Math.round((d.classification_confidence || 0.9) * 100)}%</td>
+              <td><span class="badge bg-secondary">Document Intelligence</span></td>
+              <td>
+                <span class="badge ${isLow ? 'badge-danger-soft' : 'badge-compliant'}">
+                  ${confPct}% ${isLow ? '(Needs Review)' : ''}
+                </span>
+              </td>
+              <td>${renderStatusBadge(d.processing_status)}</td>
+              <td style="text-align: right; white-space: nowrap;">
+                <button type="button" class="btn btn-sm btn-primary py-1 px-2 me-1" onclick="viewDocPreview(${d.id}, 'view')" title="View uploaded file">
+                  👁️ View Document
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 me-1" onclick="viewDocPreview(${d.id}, 'ocr')" title="Inspect extracted text and entities">
+                  🔍 Extracted Data
+                </button>
+                <a href="/api/documents/${d.id}/download?token=${encodeURIComponent(Auth.getToken())}" target="_blank" class="btn btn-sm btn-outline-dark py-1 px-2" title="Download Document">
+                  ⬇
+                </a>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      } catch (err) {
+        showAlert("upload-alert", err.message);
+      }
+    }
+
+    document.getElementById("doc-upload-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentBidId) {
+        showAlert("upload-alert", "Please submit a bid first before uploading documents.");
+        return;
+      }
+      const btn = document.getElementById("upload-btn");
+      btn.disabled = true;
+      btn.textContent = "Uploading & Analyzing Documents...";
+      try {
+        const formData = new FormData(e.target);
+        const res = await apiRequest(`/api/bids/${currentBidId}/documents`, {
+          method: "POST",
+          body: formData,
+        });
+        showAlert("upload-alert", `${res.documents.length} document(s) uploaded, classified, and analyzed successfully!`, "success");
+        e.target.reset();
+        await loadBidDocs();
+      } catch (err) {
+        showAlert("upload-alert", `${err.message} (${err.error_code || "ERROR"})`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Upload & Process Documents";
+      }
+    });
+
+    loadBidDocs();
+  </script>
+</body>
+</html>

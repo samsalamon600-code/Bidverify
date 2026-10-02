@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bid Details &amp; Human Review | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Procurement Officer Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small fw-bold text-muted">Select Bid:</label>
+            <select id="bid-selector" class="form-select form-select-sm" style="width:320px;" onchange="switchBid(this.value)"></select>
+          </div>
+          <div class="d-flex gap-2" id="top-action-buttons"></div>
+        </div>
+
+        <div id="bid-alert"></div>
+        <div id="bid-details-content">Loading bid details...</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Document Analysis & Inline Viewer Modal -->
+  <div class="modal fade" id="docPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="modal-title fw-bold text-primary mb-0">DOCUMENT VIEWER &amp; ANALYSIS</h6>
+            <span class="badge bg-secondary" id="modalDocBadgeCategory">--</span>
+            <span class="small text-muted" id="modalDocTitle"></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <!-- Navigation Tabs -->
+          <ul class="nav nav-pills mb-3 border-bottom pb-2" id="docModalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-semibold" id="tab-doc-view-btn" data-bs-toggle="pill" data-bs-target="#tab-doc-view" type="button" role="tab">
+                📄 Original Document Viewer
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold" id="tab-doc-ocr-btn" data-bs-toggle="pill" data-bs-target="#tab-doc-ocr" type="button" role="tab">
+                🔍 Extracted Data &amp; Intelligence
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="docModalTabsContent">
+            <!-- TAB 1: ORIGINAL DOCUMENT VIEWER -->
+            <div class="tab-pane fade show active" id="tab-doc-view" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center p-2 mb-2 bg-light rounded border small">
+                <div>
+                  <span class="fw-semibold">Document:</span> <span id="viewerDocFilename" class="text-dark fw-bold"></span>
+                  <span class="text-muted ms-2">(<span id="viewerDocSize">--</span>)</span>
+                </div>
+                <div class="d-flex gap-2">
+                  <a id="viewerOpenNewTabBtn" href="#" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2">
+                    🗗 Open in New Tab
+                  </a>
+                  <a id="viewerDownloadBtn" href="#" target="_blank" class="btn btn-sm btn-primary py-1 px-2">
+                    ⬇ Download Original File
+                  </a>
+                </div>
+              </div>
+
+              <!-- Viewer Container -->
+              <div id="viewerContainer" class="border rounded bg-dark d-flex align-items-center justify-content-center" style="min-height: 580px; position: relative;">
+                <!-- Iframe for PDF and Web Docs -->
+                <iframe id="docViewerIframe" src="" style="width: 100%; height: 600px; border: none; display: none; background: #fff;" allowfullscreen></iframe>
+                
+                <!-- Image Tag for PNG/JPG/JPEG/WEBP -->
+                <div id="docViewerImgContainer" class="p-3 text-center w-100" style="display: none; max-height: 600px; overflow: auto; background: #2a2a2a;">
+                  <img id="docViewerImg" src="" alt="Document Preview" class="img-fluid rounded shadow" style="max-height: 560px; object-fit: contain;" />
+                </div>
+
+                <!-- Text / Fallback Container -->
+                <div id="docViewerTextContainer" class="p-3 w-100 bg-white" style="display: none; height: 600px; overflow-y: auto;">
+                  <div class="alert alert-info py-2 small mb-2">Displaying direct text content from document:</div>
+                  <pre id="docViewerTextPre" class="small mb-0" style="white-space: pre-wrap; font-family: monospace; font-size: 0.84rem;"></pre>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="docViewerLoading" class="text-white text-center py-5">
+                  <div class="spinner-border text-primary mb-2" role="status"></div>
+                  <div class="small">Loading document preview...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: EXTRACTED DATA & INTELLIGENCE -->
+            <div class="tab-pane fade" id="tab-doc-ocr" role="tabpanel">
+              <!-- Processing Overview Grid -->
+              <div class="p-3 bg-light rounded border mb-3">
+                <div class="row g-2 small">
+                  <div class="col-sm-6">
+                    <div><strong>Processing Engine:</strong> <span class="badge bg-primary" id="modalDocOcrEngine">Document Intelligence Engine</span></div>
+                    <div><strong>Processing Status:</strong> <span id="modalDocOcrStatus" class="badge badge-compliant">Completed</span></div>
+                    <div><strong>Pages Processed:</strong> <span id="modalDocPages" class="fw-bold">1</span></div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div><strong>Text Extracted:</strong> <span id="modalDocExtracted" class="fw-bold text-success">Yes</span></div>
+                    <div><strong>Extraction Confidence:</strong> <span id="modalDocConfidenceBadge" class="badge badge-compliant">--</span></div>
+                    <div><strong>AI Classified Category:</strong> <span id="modalDocCategory" class="fw-semibold text-dark"></span> (<span id="modalDocConfidence"></span>)</div>
+                  </div>
+                </div>
+                <div id="modalOcrWarning" class="alert alert-warning py-2 px-3 small mt-3 mb-0 d-none">
+                  <strong>⚠ Low Confidence Extraction Alert:</strong> Extracted text confidence is below the 60% threshold. Human verification required before procurement decisions.
+                </div>
+              </div>
+
+              <!-- Structured Extracted Entities -->
+              <div class="mb-3">
+                <h6 class="fw-bold small text-muted mb-2 text-uppercase">Important Extracted Information:</h6>
+                <div id="modalStructuredEntities" class="border rounded p-2 bg-white small">
+                  <div class="text-muted">Loading extracted data...</div>
+                </div>
+              </div>
+
+              <!-- Extracted Text Viewer -->
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold small text-muted mb-0 text-uppercase">Extracted Document Text:</h6>
+                  <span class="small text-muted" id="modalDocTextLength"></span>
+                </div>
+                <pre id="modalDocText" class="p-3 bg-light rounded border small mb-0" style="white-space: pre-wrap; max-height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.82rem;"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("PROCUREMENT_OFFICER", "bid-details", "Bid Evaluation & Human Review");
+
+    let currentBidId = getQueryParam("bid_id") || "1";
+    let loadedDocumentsMap = {};
+
+    function switchBid(id) {
+      window.location.href = `/officer/bid-details.html?bid_id=${id}`;
+    }
+
+    async function triggerVerify() {
+      try {
+        const res = await apiRequest(`/api/bids/${currentBidId}/verify`, { method: "POST" });
+        showAlert("bid-alert", `Compliance verification re-run complete. Overall Score: <strong>${res.overall_compliance_score}%</strong> | Risk: <strong>${res.risk_level}</strong>`, "success");
+        await loadBidDetails();
+      } catch (err) {
+        showAlert("bid-alert", err.message);
+      }
+    }
+
+    async function quickReview(status) {
+      const comments = document.getElementById("review_comments")?.value.trim() || `Officer decision: ${status}`;
+      try {
+        await apiRequest(`/api/bids/${currentBidId}/review`, {
+          method: "POST",
+          body: JSON.stringify({
+            review_status: status,
+            review_comments: comments,
+            mark_all_checks_reviewed: true,
+          }),
+        });
+        showAlert("bid-alert", `Bid decision recorded: <strong>${status}</strong>!`, "success");
+        await loadBidDetails();
+      } catch (err) {
+        showAlert("bid-alert", err.message);
+      }
+    }
+
+    async function submitOfficerReview(e) {
+      e.preventDefault();
+      const status = document.getElementById("review_status").value;
+      const comments = document.getElementById("review_comments").value.trim();
+      try {
+        await apiRequest(`/api/bids/${currentBidId}/review`, {
+          method: "POST",
+          body: JSON.stringify({
+            review_status: status,
+            review_comments: comments,
+            mark_all_checks_reviewed: true,
+          }),
+        });
+        showAlert("bid-alert", `Human review saved! Bid status updated to <strong>${status}</strong>.`, "success");
+        await loadBidDetails();
+      } catch (err) {
+        showAlert("bid-alert", err.message);
+      }
+    }
+
+    function renderExtractedEntities(doc, ext) {
+      const struct = ext.structured_data || {};
+      let rows = [];
+      if (struct.gstin) {
+        const val = typeof struct.gstin === 'object' ? struct.gstin.value : struct.gstin;
+        const conf = typeof struct.gstin === 'object' ? struct.gstin.confidence : null;
+        rows.push({ label: "GSTIN", val: val, conf: conf });
+      }
+      if (struct.pan_number) {
+        const val = typeof struct.pan_number === 'object' ? struct.pan_number.value : struct.pan_number;
+        const conf = typeof struct.pan_number === 'object' ? struct.pan_number.confidence : null;
+        rows.push({ label: "Corporate PAN", val: val, conf: conf });
+      }
+      if (struct.udyam_number) {
+        const val = typeof struct.udyam_number === 'object' ? struct.udyam_number.value : struct.udyam_number;
+        const conf = typeof struct.udyam_number === 'object' ? struct.udyam_number.confidence : null;
+        rows.push({ label: "Udyam / MSME Registration", val: val, conf: conf });
+      }
+      if (struct.company_name) {
+        const val = typeof struct.company_name === 'object' ? struct.company_name.value : struct.company_name;
+        const conf = typeof struct.company_name === 'object' ? struct.company_name.confidence : null;
+        rows.push({ label: "Company / Entity Name", val: val, conf: conf });
+      }
+      if (struct.dates && struct.dates.length) {
+        rows.push({ label: "Detected Dates", val: struct.dates.join(", "), conf: null });
+      }
+      if (struct.monetary_values && struct.monetary_values.length) {
+        rows.push({ label: "Detected Monetary Values", val: struct.monetary_values.join(", "), conf: null });
+      }
+      if (struct.technical_specifications && Object.keys(struct.technical_specifications).length) {
+        Object.entries(struct.technical_specifications).forEach(([k, v]) => {
+          rows.push({ label: `Spec: ${k}`, val: `${v.value || ""} ${v.unit || ""}`.trim(), conf: null });
+        });
+      }
+
+      if (!rows.length) {
+        return `<div class="text-muted fst-italic p-2">No key entity records found in extraction metadata. Full document OCR text is displayed below.</div>`;
+      }
+
+      return `
+        <table class="table table-sm table-bordered mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th style="width:30%;">Entity / Field</th>
+              <th style="width:45%;">Extracted Value</th>
+              <th style="width:25%;">Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td class="fw-semibold text-dark">${r.label}</td>
+                <td class="font-monospace text-primary fw-bold">${r.val}</td>
+                <td>${r.conf ? `<span class="badge ${r.conf >= 0.60 ? 'bg-success' : 'bg-danger'}">${Math.round(r.conf * 100)}%</span>` : `<span class="text-muted">Extracted (100%)</span>`}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function viewDocPreview(docId, initialTab = 'view') {
+      const doc = loadedDocumentsMap[docId];
+      if (!doc) return;
+
+      const ext = doc.extraction || (doc.extractions && doc.extractions[0]) || {};
+      const rawText = ext.raw_text || doc.raw_text || doc.extracted_text || "";
+      const ocrConf = doc.ocr_confidence !== undefined && doc.ocr_confidence !== null ? doc.ocr_confidence : (ext.extraction_confidence || 0.9);
+      const isLowConf = ocrConf > 0 && ocrConf < 0.60;
+
+      // Header info
+      document.getElementById("modalDocTitle").textContent = doc.original_filename;
+      document.getElementById("modalDocBadgeCategory").textContent = doc.detected_doc_type || doc.declared_doc_type || "Document";
+      document.getElementById("viewerDocFilename").textContent = doc.original_filename;
+      document.getElementById("viewerDocSize").textContent = doc.file_size_bytes ? `${(doc.file_size_bytes / 1024).toFixed(1)} KB` : "Standard";
+
+      const token = Auth.getToken();
+      const viewUrl = `/api/documents/${doc.id}/view?token=${encodeURIComponent(token)}`;
+      const downloadUrl = `/api/documents/${doc.id}/download?token=${encodeURIComponent(token)}`;
+
+      document.getElementById("viewerOpenNewTabBtn").href = viewUrl;
+      document.getElementById("viewerDownloadBtn").href = downloadUrl;
+
+      // Setup Document Viewer elements
+      const iframeEl = document.getElementById("docViewerIframe");
+      const imgContainer = document.getElementById("docViewerImgContainer");
+      const imgEl = document.getElementById("docViewerImg");
+      const textContainer = document.getElementById("docViewerTextContainer");
+      const textPre = document.getElementById("docViewerTextPre");
+      const loadingEl = document.getElementById("docViewerLoading");
+
+      iframeEl.style.display = "none";
+      iframeEl.src = "";
+      imgContainer.style.display = "none";
+      imgEl.src = "";
+      textContainer.style.display = "none";
+      loadingEl.style.display = "block";
+
+      const fileExt = (doc.original_filename.split('.').pop() || '').toLowerCase();
+      const isImage = ["png", "jpg", "jpeg", "webp"].includes(fileExt);
+      const isPdf = fileExt === "pdf";
+
+      setTimeout(() => {
+        loadingEl.style.display = "none";
+        if (isImage) {
+          imgEl.src = viewUrl;
+          imgContainer.style.display = "block";
+        } else if (isPdf) {
+          iframeEl.src = viewUrl;
+          iframeEl.style.display = "block";
+        } else {
+          textPre.textContent = rawText || `File: ${doc.original_filename}\nFormat: ${fileExt}\nClick 'Open in New Tab' or 'Download' to view outside.`;
+          textContainer.style.display = "block";
+        }
+      }, 150);
+
+      // Setup OCR Tab
+      document.getElementById("modalDocOcrEngine").textContent = "Document Intelligence Engine";
+      document.getElementById("modalDocOcrStatus").textContent = doc.processing_status || "Completed";
+      document.getElementById("modalDocPages").textContent = doc.page_count || 1;
+      document.getElementById("modalDocExtracted").textContent = rawText ? "Yes" : "No";
+
+      const confBadge = document.getElementById("modalDocConfidenceBadge");
+      const confPct = Math.round(ocrConf * 100);
+      confBadge.textContent = `${confPct}%`;
+      confBadge.className = isLowConf ? "badge bg-danger" : "badge bg-success";
+
+      const warningEl = document.getElementById("modalOcrWarning");
+      if (isLowConf) {
+        warningEl.classList.remove("d-none");
+      } else {
+        warningEl.classList.add("d-none");
+      }
+
+      document.getElementById("modalDocCategory").textContent = doc.detected_doc_type || doc.declared_doc_type || "N/A";
+      document.getElementById("modalDocConfidence").textContent = `${Math.round((doc.classification_confidence || 0.9) * 100)}%`;
+
+      document.getElementById("modalStructuredEntities").innerHTML = renderExtractedEntities(doc, ext);
+      document.getElementById("modalDocText").textContent = rawText || "No extracted text available for this document.";
+      document.getElementById("modalDocTextLength").textContent = `${rawText.length} characters`;
+
+      // Switch to requested initial tab
+      if (initialTab === 'ocr') {
+        const ocrTabBtn = document.getElementById("tab-doc-ocr-btn");
+        if (ocrTabBtn) {
+          const bsTab = bootstrap.Tab.getOrCreateInstance(ocrTabBtn);
+          bsTab.show();
+        }
+      } else {
+        const viewTabBtn = document.getElementById("tab-doc-view-btn");
+        if (viewTabBtn) {
+          const bsTab = bootstrap.Tab.getOrCreateInstance(viewTabBtn);
+          bsTab.show();
+        }
+      }
+
+      const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("docPreviewModal"));
+      modal.show();
+    }
+
+    async function loadBidDetails() {
+      try {
+        const allBidsRes = await apiRequest("/api/bids");
+        const allBids = allBidsRes.bids || [];
+        if (allBids.length && !getQueryParam("bid_id")) {
+          currentBidId = String(allBids[0].id);
+        }
+
+        const sel = document.getElementById("bid-selector");
+        sel.innerHTML = allBids.map(b => `
+          <option value="${b.id}" ${String(b.id) === String(currentBidId) ? "selected" : ""}>
+            ${b.bid_number} — ${b.company_name} (${b.overall_compliance_score}%)
+          </option>
+        `).join("");
+
+        document.getElementById("top-action-buttons").innerHTML = `
+          <button class="btn btn-sm btn-success fw-semibold" onclick="quickReview('APPROVED')">&#10003; Approve Bid</button>
+          <button class="btn btn-sm btn-danger fw-semibold" onclick="quickReview('REJECTED')">&#10005; Reject Bid</button>
+          <button class="btn btn-sm btn-warning fw-semibold ms-1" onclick="triggerVerify()">Re-Run Compliance Verification</button>
+        `;
+
+        const data = await apiRequest(`/api/bids/${currentBidId}`);
+        const b = data.bid;
+        loadedDocumentsMap = {};
+        (b.documents || []).forEach(d => {
+          loadedDocumentsMap[d.id] = d;
+        });
+
+        const c = b.company || {};
+        const t = b.tender || {};
+
+        // Split Compliance Checks into Two Categories
+        const allChecks = b.compliance_results || [];
+        const docAndStatChecks = allChecks.filter(cr => cr.category === "DOCUMENT" || cr.category === "STATUTORY");
+        const techAndTenderChecks = allChecks.filter(cr => cr.category !== "DOCUMENT" && cr.category !== "STATUTORY");
+
+        const missingCerts = docAndStatChecks.filter(cr => 
+          cr.submitted_text === "MISSING DOCUMENT" || 
+          (cr.category === "DOCUMENT" && cr.status === "NON_COMPLIANT") ||
+          (cr.reason && cr.reason.toLowerCase().includes("missing from the bidder's submission"))
+        );
+        const certsPassed = docAndStatChecks.filter(cr => cr.status === "COMPLIANT").length;
+        const certsTotal = docAndStatChecks.length;
+
+        const techPassed = techAndTenderChecks.filter(cr => cr.status === "COMPLIANT").length;
+        const techFailed = techAndTenderChecks.filter(cr => cr.status === "NON_COMPLIANT").length;
+        const techTotal = techAndTenderChecks.length;
+
+        document.getElementById("bid-details-content").innerHTML = `
+          <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+              <div class="gov-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+                  <div>
+                    <span class="badge bg-primary me-2">${b.bid_number}</span>
+                    ${renderStatusBadge(b.officer_review_status)}
+                    <h4 class="fw-bold mt-2 mb-1">${c.company_name || b.company_name}</h4>
+                    <div class="small text-muted">Tender: <strong>${t.tender_code}</strong> &mdash; ${t.title}</div>
+                  </div>
+                  <div class="text-end">
+                    <div class="small text-muted">Quoted Bid Amount</div>
+                    <div class="fs-4 fw-bold text-dark">${formatINR(b.quoted_amount)}</div>
+                    <div class="small text-muted">Est. Value: ${formatINR(t.estimated_value)}</div>
+                  </div>
+                </div>
+
+                <div class="row g-3 small">
+                  <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border h-100 interactive-item">
+                      <div class="fw-bold text-dark mb-2">Bidder Statutory Credentials</div>
+                      <div class="credential-row"><strong>GSTIN:</strong> ${c.gstin || "-"}</div>
+                      <div class="credential-row"><strong>Corporate PAN:</strong> ${c.pan || "-"}</div>
+                      <div class="credential-row"><strong>Udyam MSME ID:</strong> ${c.udyam_number || "-"} (${c.enterprise_type || "-"})</div>
+                      <div class="credential-row"><strong>CIN / Reg No:</strong> ${c.registration_number || "-"}</div>
+                      <div class="credential-row"><strong>Address:</strong> ${c.address || "-"}</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border h-100 interactive-item">
+                      <div class="fw-bold text-dark mb-2">Submitted Technical &amp; Commercial Offer</div>
+                      <div class="credential-row"><strong>Product Offered:</strong> ${b.product_name} (${b.product_model})</div>
+                      <div class="credential-row"><strong>OEM Status:</strong> ${b.oem_status}</div>
+                      <div class="credential-row"><strong>On-Site Warranty:</strong> ${b.warranty_years} Years</div>
+                      <div class="credential-row"><strong>Delivery Period:</strong> ${b.delivery_days} Days</div>
+                      <div class="credential-row"><strong>Make in India Local Content:</strong> ${b.local_content_declared}%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Officer Human Review Decision-Support Card -->
+            <div class="col-lg-4">
+              <div class="gov-card p-4 h-100 border-primary">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold text-dark mb-0">Authorized Officer Decision</h6>
+                  ${renderRiskBadge(b.risk_level)}
+                </div>
+                <div class="p-2 bg-light rounded border mb-3 d-flex justify-content-between align-items-center">
+                  <span class="small fw-semibold">AI Compliance Score:</span>
+                  <span class="fs-5 fw-bold text-dark">${b.overall_compliance_score}%</span>
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                  <button type="button" class="btn btn-success btn-sm flex-fill fw-semibold py-2" onclick="quickReview('APPROVED')">
+                    &#10003; Approve Bid
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm flex-fill fw-semibold py-2" onclick="quickReview('REJECTED')">
+                    &#10005; Reject Bid
+                  </button>
+                </div>
+                <form onsubmit="submitOfficerReview(event)">
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold">Formal Review Status</label>
+                    <select id="review_status" class="form-select form-select-sm">
+                      <option value="APPROVED" ${b.officer_review_status === "APPROVED" ? "selected" : ""}>Approved (Qualified)</option>
+                      <option value="REJECTED" ${b.officer_review_status === "REJECTED" ? "selected" : ""}>Rejected (Disqualified)</option>
+                      <option value="VERIFIED" ${b.officer_review_status === "VERIFIED" ? "selected" : ""}>Verified</option>
+                      <option value="REQUIRES_CLARIFICATION" ${b.officer_review_status === "REQUIRES_CLARIFICATION" ? "selected" : ""}>Requires Clarification</option>
+                      <option value="REVIEWED" ${b.officer_review_status === "REVIEWED" ? "selected" : ""}>Under Review / Reviewed</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold">Officer Remarks / Reasons</label>
+                    <textarea id="review_comments" class="form-control form-control-sm" rows="3" placeholder="Enter review justification, reasons for approval/rejection, or clarification requests...">${b.officer_review_comments || ""}</textarea>
+                  </div>
+                  <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
+                    Save Review Decision
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Uploaded Documents Table with Direct View Option -->
+          <div class="gov-card mb-4">
+            <div class="gov-card-header d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold">Uploaded Bid Documents (${(b.documents || []).length})</span>
+                <span class="small text-muted ms-2">&mdash; Click 'View Document' to inspect uploaded PDF or image files</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-gov table-hover mb-0 small">
+                <thead>
+                  <tr>
+                    <th>Original Filename</th>
+                    <th>Declared Category</th>
+                    <th>AI Classified Category</th>
+                    <th>Processing Engine</th>
+                    <th>Extraction Confidence</th>
+                    <th>Status</th>
+                    <th style="text-align: right; min-width: 250px;">Document Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(b.documents || []).length === 0
+                    ? `<tr><td colspan="7" class="text-center text-muted py-3">No documents uploaded for this bid.</td></tr>`
+                    : (b.documents || []).map(d => {
+                      const ocrConf = d.ocr_confidence !== undefined && d.ocr_confidence !== null ? d.ocr_confidence : 0.9;
+                      const confPct = Math.round(ocrConf * 100);
+                      const isLow = ocrConf > 0 && ocrConf < 0.60;
+                      return `
+                        <tr>
+                          <td class="fw-semibold">
+                            <a href="javascript:void(0)" onclick="viewDocPreview(${d.id}, 'view')" class="text-primary text-decoration-none fw-bold" title="Click to view file">
+                              📄 ${d.original_filename}
+                            </a>
+                          </td>
+                          <td>${d.declared_doc_type || "-"}</td>
+                          <td><span class="badge bg-info text-dark">${d.detected_doc_type}</span></td>
+                          <td><span class="badge bg-secondary">Document Intelligence</span></td>
+                          <td>
+                            <span class="badge ${isLow ? 'badge-danger-soft' : 'badge-compliant'}">
+                              ${confPct}% ${isLow ? '(Needs Review)' : ''}
+                            </span>
+                          </td>
+                          <td>${renderStatusBadge(d.processing_status)}</td>
+                          <td style="text-align: right; white-space: nowrap;">
+                            <button type="button" class="btn btn-sm btn-primary py-1 px-2 me-1" onclick="viewDocPreview(${d.id}, 'view')" title="View actual uploaded document">
+                              👁️ View Document
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 me-1" onclick="viewDocPreview(${d.id}, 'ocr')" title="Inspect extracted text and entities">
+                              🔍 Extracted Data
+                            </button>
+                            <a href="/api/documents/${d.id}/download?token=${encodeURIComponent(Auth.getToken())}" target="_blank" class="btn btn-sm btn-outline-dark py-1 px-2" title="Download Document">
+                              ⬇
+                            </a>
+                          </td>
+                        </tr>
+                      `;
+                    }).join("")
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CATEGORY 1: Mandatory Certificates & Statutory Compliance Verification -->
+          <div class="gov-card mb-4 border-primary">
+            <div class="gov-card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+              <div>
+                <span class="fw-bold text-primary fs-6">📋 CATEGORY 1: Mandatory Certificates &amp; Statutory Compliance Verification</span>
+                <span class="badge ${missingCerts.length ? 'badge-danger-soft' : 'badge-compliant'} ms-2">
+                  ${missingCerts.length ? `❌ ${missingCerts.length} Missing Certificate(s)` : '✔ All Mandatory Certificates Present'}
+                </span>
+              </div>
+              <div class="small text-muted">
+                Document Score: <strong>${b.document_compliance_score}%</strong> | Statutory Score: <strong>${b.statutory_compliance_score}%</strong>
+              </div>
+            </div>
+
+            <div class="p-3">
+              ${missingCerts.length > 0 ? `
+                <div class="alert cert-alert-danger d-flex align-items-center mb-3 py-2 px-3">
+                  <span class="fs-4 me-3">🚨</span>
+                  <div>
+                    <div class="fw-bold text-danger">CRITICAL MISSING CERTIFICATES (${missingCerts.length}):</div>
+                    <div class="small">The following mandatory tender certificates were not uploaded or are missing: <strong>${missingCerts.map(c => c.check_name.replace('Mandatory Document: ', '')).join(', ')}</strong>. This bid may be disqualified per GeM procurement rules.</div>
+                  </div>
+                </div>
+              ` : `
+                <div class="alert alert-success d-flex align-items-center mb-3 py-2 px-3 border border-success">
+                  <span class="fs-5 me-2">✔</span>
+                  <span class="small fw-semibold text-success">All mandatory certificates and statutory registrations verified (${certsPassed}/${certsTotal} checks passed).</span>
+                </div>
+              `}
+
+              <div class="table-responsive">
+                <table class="table table-gov table-hover mb-0 small">
+                  <thead>
+                    <tr>
+                      <th style="width: 12%;">Category</th>
+                      <th style="width: 25%;">Certificate / Verification Check</th>
+                      <th style="width: 22%;">Tender Mandatory Rule</th>
+                      <th style="width: 20%;">Submitted / Extracted Status</th>
+                      <th style="width: 10%;">Status</th>
+                      <th style="width: 11%; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${docAndStatChecks.map(cr => {
+                      const isMissing = cr.submitted_text === "MISSING DOCUMENT" || (cr.category === "DOCUMENT" && cr.status === "NON_COMPLIANT");
+                      const linkedDocId = (cr.evidence && cr.evidence.length && cr.evidence[0].document_id) || null;
+                      const matchedDoc = linkedDocId ? loadedDocumentsMap[linkedDocId] : (b.documents || []).find(d => 
+                        (d.detected_doc_type && cr.check_name.toLowerCase().includes(d.detected_doc_type.toLowerCase())) ||
+                        (d.declared_doc_type && cr.check_name.toLowerCase().includes(d.declared_doc_type.toLowerCase()))
+                      );
+
+                      return `
+                        <tr class="${isMissing ? 'table-danger border-start border-danger-soft border-4' : ''}">
+                          <td>
+                            <span class="badge ${cr.category === 'DOCUMENT' ? 'bg-primary' : 'bg-secondary'}">${cr.category}</span>
+                          </td>
+                          <td class="fw-semibold">
+                            ${cr.check_name}
+                            ${isMissing ? `<span class="badge badge-danger-soft ms-1">MANDATORY</span>` : ''}
+                            <div class="text-muted small mt-1 font-monospace" style="font-size:0.75rem;">Source: ${cr.integration_source}</div>
+                          </td>
+                          <td>${cr.requirement_text}</td>
+                          <td>
+                            ${isMissing 
+                              ? `<span class="badge badge-danger-soft fs-6 px-2 py-1">❌ MISSING DOCUMENT</span>`
+                              : `<span class="text-success fw-bold">✔ ${cr.submitted_text}</span>`
+                            }
+                            <div class="text-muted mt-1 small">${cr.reason}</div>
+                          </td>
+                          <td>${renderStatusBadge(cr.status)}</td>
+                          <td style="text-align: right; white-space: nowrap;">
+                            ${matchedDoc 
+                              ? `<button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" onclick="viewDocPreview(${matchedDoc.id}, 'view')">👁️ View File</button>`
+                              : isMissing 
+                                ? `<span class="badge badge-danger-soft">Not Uploaded</span>`
+                                : `<span class="text-muted small">System Verified</span>`
+                            }
+                          </td>
+                        </tr>
+                      `;
+                    }).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- CATEGORY 2: Technical Specifications & Tender Parameters Compliance -->
+          <div class="gov-card mb-4 border-info">
+            <div class="gov-card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+              <div>
+                <span class="fw-bold text-dark fs-6">⚙️ CATEGORY 2: Technical Specifications &amp; Tender Parameters Compliance</span>
+                <span class="badge bg-info text-dark ms-2">${techPassed}/${techTotal} Compliant</span>
+                ${techFailed ? `<span class="badge badge-warning-soft ms-1">${techFailed} Deviation(s)</span>` : ''}
+              </div>
+              <div class="small text-muted">
+                Technical Score: <strong>${b.technical_compliance_score}%</strong> | Tender Score: <strong>${b.tender_compliance_score}%</strong>
+              </div>
+            </div>
+
+            <div class="p-3">
+              <div class="table-responsive">
+                <table class="table table-gov table-hover mb-0 small">
+                  <thead>
+                    <tr>
+                      <th style="width: 10%;">Category</th>
+                      <th style="width: 24%;">Parameter / Specification</th>
+                      <th style="width: 22%;">Tender Required Threshold</th>
+                      <th style="width: 20%;">Bidder Offered Specification</th>
+                      <th style="width: 10%;">Status</th>
+                      <th style="width: 14%; text-align: right;">Evidence Doc</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${techAndTenderChecks.map(cr => {
+                      const isFailed = cr.status === "NON_COMPLIANT";
+                      const linkedDocId = (cr.evidence && cr.evidence.length && cr.evidence[0].document_id) || null;
+                      const matchedDoc = linkedDocId ? loadedDocumentsMap[linkedDocId] : (b.documents || []).find(d => 
+                        (d.detected_doc_type || "").includes("Technical") || (d.declared_doc_type || "").includes("Technical")
+                      );
+
+                      return `
+                        <tr class="${isFailed ? 'table-warning border-start border-warning-soft border-4' : ''}">
+                          <td>
+                            <span class="badge ${cr.category === 'TECHNICAL' ? 'bg-info text-dark' : 'bg-dark'}">${cr.category}</span>
+                          </td>
+                          <td class="fw-semibold">
+                            ${cr.check_name}
+                            <div class="text-muted mt-1 small">${cr.reason}</div>
+                          </td>
+                          <td class="font-monospace text-dark fw-bold">${cr.requirement_text}</td>
+                          <td>
+                            <span class="font-monospace fw-bold ${isFailed ? 'text-danger' : 'text-primary'}">${cr.submitted_text}</span>
+                          </td>
+                          <td>${renderStatusBadge(cr.status)}</td>
+                          <td style="text-align: right; white-space: nowrap;">
+                            ${matchedDoc 
+                              ? `<button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="viewDocPreview(${matchedDoc.id}, 'view')">👁️ Spec Doc</button>`
+                              : `<span class="text-muted small">-</span>`
+                            }
+                          </td>
+                        </tr>
+                      `;
+                    }).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        showAlert("bid-alert", err.message);
+      }
+    }
+
+    loadBidDetails();
+  </script>
+</body>
+</html>
