@@ -152,8 +152,13 @@ def create_app(test_config=None):
 
     with app.app_context():
         db.create_all()
-        if not app.config.get("TESTING") and os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
-            seed_demo_data()
+        try:
+            from backend.models.models import Tender
+            if Tender.query.count() == 0:
+                from backend.seed_tender_data import seed_procurement_data
+                seed_procurement_data()
+        except Exception as seed_err:
+            print(f"Auto-seed check: {seed_err}")
 
     return app
 
