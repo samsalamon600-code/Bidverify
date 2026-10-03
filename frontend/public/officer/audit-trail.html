@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit Trail | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Procurement Officer Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div class="gov-card">
+          <div class="gov-card-header flex-wrap gap-2">
+            <span>Immutable System &amp; Officer Audit Trail</span>
+            <div class="d-flex gap-2">
+              <input type="text" id="action-filter" class="form-control form-control-sm" placeholder="Filter by action (e.g. Reviewed, Report, Bid)..." oninput="loadAuditLogs()" />
+              <button class="btn btn-sm btn-outline-secondary" onclick="loadAuditLogs()">Refresh</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-gov table-hover mb-0 small">
+              <thead>
+                <tr>
+                  <th>Log ID</th>
+                  <th>Timestamp</th>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Action</th>
+                  <th>Tender / Bid / Doc ID</th>
+                  <th>Result</th>
+                  <th>Review Comments / Details</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("PROCUREMENT_OFFICER", "audit-trail", "Governance & Verification Audit Trail");
+
+    async function loadAuditLogs() {
+      const act = document.getElementById("action-filter").value.trim();
+      const tbody = document.getElementById("audit-tbody");
+      try {
+        const data = await apiRequest(`/api/audit-logs?action=${encodeURIComponent(act)}`);
+        const logs = data.audit_logs || [];
+        if (!logs.length) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No audit records found.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = logs.map(lg => `
+          <tr>
+            <td class="text-muted">#${lg.id}</td>
+            <td>${new Date(lg.timestamp).toLocaleString("en-IN")}</td>
+            <td class="fw-semibold">${lg.user_name || "System"}</td>
+            <td><span class="badge bg-light text-dark border">${lg.user_role || "SYSTEM"}</span></td>
+            <td class="fw-bold text-primary">${lg.action}</td>
+            <td>
+              ${lg.tender_id ? `T#${lg.tender_id} ` : ""}
+              ${lg.bid_id ? `<a href="/officer/bid-details.html?bid_id=${lg.bid_id}">B#${lg.bid_id}</a> ` : ""}
+              ${lg.document_id ? `D#${lg.document_id}` : ""}
+            </td>
+            <td>${renderStatusBadge(lg.result_status)}</td>
+            <td class="text-muted">${lg.review_comments || "-"}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-danger">${err.message}</td></tr>`;
+      }
+    }
+    loadAuditLogs();
+  </script>
+</body>
+</html>

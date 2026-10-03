@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Intelligence &amp; Data Extraction | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Procurement Officer Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small fw-bold text-muted">Select Bid:</label>
+            <select id="bid-selector" class="form-select form-select-sm" style="width:340px;" onchange="window.location.href='/officer/document-analysis.html?bid_id='+this.value"></select>
+          </div>
+          <span class="badge bg-primary">Pipeline: Document Preprocessing &rarr; Text Extraction &rarr; Entity Normalization</span>
+        </div>
+
+        <div id="doc-alert"></div>
+        <div id="docs-container">Loading document intelligence extractions...</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("PROCUREMENT_OFFICER", "document-analysis", "Document Intelligence & Data Extraction");
+
+    let currentBidId = getQueryParam("bid_id") || "1";
+
+    async function reprocessDoc(docId, btn) {
+      btn.disabled = true;
+      btn.textContent = "Analyzing Document...";
+      try {
+        await apiRequest(`/api/documents/${docId}/process`, { method: "POST" });
+        showAlert("doc-alert", `Document #${docId} re-analyzed via Document Intelligence pipeline.`, "success");
+        await loadDocuments();
+      } catch (err) {
+        showAlert("doc-alert", err.message);
+        btn.disabled = false;
+        btn.textContent = "Re-Analyze Document";
+      }
+    }
+
+    async function loadDocuments() {
+      try {
+        const allBidsRes = await apiRequest("/api/bids");
+        const allBids = allBidsRes.bids || [];
+        if (allBids.length && !getQueryParam("bid_id")) {
+          currentBidId = String(allBids[0].id);
+        }
+        document.getElementById("bid-selector").innerHTML = allBids.map(b => `
+          <option value="${b.id}" ${String(b.id) === String(currentBidId) ? "selected" : ""}>
+            ${b.bid_number} — ${b.company_name} (${b.document_count} docs)
+          </option>
+        `).join("");
+
+        const data = await apiRequest(`/api/bids/${currentBidId}`);
+        const b = data.bid;
+        const docs = b.documents || [];
+        const container = document.getElementById("docs-container");
+
+        if (!docs.length) {
+          container.innerHTML = `<div class="gov-card p-4 text-muted">No documents uploaded for this bid.</div>`;
+          return;
+        }
+
+        container.innerHTML = docs.map(d => {
+          const ext = d.extraction || {};
+          const structured = ext.structured_data || {};
+          const entities = ext.entities || [];
+          return `
+            <div class="gov-card mb-4">
+              <div class="gov-card-header flex-wrap gap-2">
+                <div>
+                  <span class="fw-bold">${d.original_filename}</span>
+                  <span class="badge bg-info text-dark ms-2">Detected: ${d.detected_doc_type} (${Math.round((d.classification_confidence || 0.9)*100)}%)</span>
+                  <span class="badge bg-secondary ms-1">Engine: Document Intelligence</span>
+                  <span class="badge ${d.ocr_confidence && d.ocr_confidence < 0.60 ? 'badge-danger-soft' : 'badge-compliant'} ms-1">Extraction Conf: ${Math.round((d.ocr_confidence || 0.9)*100)}%</span>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-primary" onclick="reprocessDoc(${d.id}, this)">Re-Analyze Document</button>
+                  <a href="/api/documents/${d.id}/download?token=${encodeURIComponent(Auth.getToken() || '')}" target="_blank" class="btn btn-sm btn-outline-secondary">View Original File</a>
+                </div>
+              </div>
+              <div class="p-3">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="small fw-bold text-dark mb-1">Extracted Document Text</div>
+                    <div class="ocr-snippet-box">${ext.raw_text || "No text extracted."}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="small fw-bold text-dark mb-1">Structured Information &amp; Key Entities Extracted</div>
+                    <div class="p-3 bg-light rounded border small mb-2">
+                      <pre class="mb-0" style="font-size:0.78rem; white-space:pre-wrap;">${JSON.stringify(structured, null, 2)}</pre>
+                    </div>
+                    <div class="small fw-bold text-dark mb-1">Named Entities Identified</div>
+                    <div class="d-flex flex-wrap gap-1">
+                      ${entities.length ? entities.map(ent => `<span class="badge bg-white text-dark border">${ent.label}: <strong>${ent.text}</strong></span>`).join("") : '<span class="text-muted small">None</span>'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        showAlert("doc-alert", err.message);
+      }
+    }
+    loadDocuments();
+  </script>
+</body>
+</html>

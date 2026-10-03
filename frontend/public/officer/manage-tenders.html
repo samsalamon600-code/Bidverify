@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Tenders | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Procurement Officer Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div id="manage-alert"></div>
+
+        <div class="gov-card">
+          <div class="gov-card-header">
+            <span>Manage Published GeM Tenders</span>
+            <div class="d-flex gap-2">
+              <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search tender code or title..." oninput="loadTenders()" />
+              <a href="/officer/create-tender.html" class="btn btn-sm btn-primary text-nowrap">+ Create Tender</a>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-gov table-hover mb-0 small">
+              <thead>
+                <tr>
+                  <th>Tender ID</th>
+                  <th>Title &amp; Department</th>
+                  <th>Category</th>
+                  <th>Est. Value</th>
+                  <th>Closing Date</th>
+                  <th>Min Local Content</th>
+                  <th>Bids</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tenders-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("PROCUREMENT_OFFICER", "manage-tenders", "Manage Procurement Tenders");
+
+    async function loadTenders() {
+      const q = document.getElementById("search-input").value.trim();
+      const tbody = document.getElementById("tenders-tbody");
+      try {
+        const data = await apiRequest(`/api/tenders?q=${encodeURIComponent(q)}`);
+        const tenders = data.tenders || [];
+        if (!tenders.length) {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No tenders found.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = tenders.map(t => {
+          const isBidded = (t.bid_count > 0);
+          const biddedBadge = isBidded
+            ? `<span class="badge bg-success text-white py-1 px-2 d-inline-flex align-items-center gap-1" title="Tender requirement has received submitted bids">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/></svg>
+                 Already Bidded (${t.bid_count})
+               </span>`
+            : `<span class="badge bg-secondary">0 Bids</span>`;
+
+          return `
+          <tr>
+            <td class="fw-bold">
+              <a href="/officer/tender-details.html?tender_id=${t.id}" class="text-primary text-decoration-none" title="View Tender Details">
+                ${t.tender_code}
+              </a>
+            </td>
+            <td>
+              <a href="/officer/tender-details.html?tender_id=${t.id}" class="text-dark text-decoration-none fw-semibold d-block" title="View Tender Details">
+                ${t.title}
+              </a>
+              <div class="text-muted small">${t.department}</div>
+            </td>
+            <td>${t.category || "-"}</td>
+            <td class="fw-semibold">${formatINR(t.estimated_value)}</td>
+            <td>${t.closing_date || "-"}</td>
+            <td>${t.local_content_requirements}%</td>
+            <td>${biddedBadge}</td>
+            <td>${renderStatusBadge(t.status)}</td>
+            <td>
+              <div class="d-flex flex-wrap gap-1 align-items-center">
+                <a href="/officer/tender-details.html?tender_id=${t.id}" class="btn btn-sm btn-primary text-nowrap fw-semibold" title="View Full Specifications">
+                  Tender Details
+                </a>
+                <a href="/officer/submitted-bids.html?tender_id=${t.id}" class="btn btn-sm btn-outline-secondary text-nowrap" title="View Submitted Bids">
+                  Bids (${t.bid_count})
+                </a>
+                <button class="btn btn-sm btn-outline-danger text-nowrap fw-semibold" onclick="confirmDeleteTender(${t.id}, '${t.tender_code}', ${t.bid_count})" title="Permanently delete tender">
+                  🗑 Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        `}).join("");
+      } catch (err) {
+        showAlert("manage-alert", err.message);
+      }
+    }
+
+    async function confirmDeleteTender(id, code, bidCount) {
+      const warningMsg = bidCount > 0
+        ? `Are you sure you want to permanently delete Tender "${code}"?\n\nWARNING: This tender already has ${bidCount} submitted bid(s). Deleting it will permanently remove the tender along with all associated bids, documents, and evaluation records!`
+        : `Are you sure you want to permanently delete Tender "${code}"?`;
+
+      if (!confirm(warningMsg)) return;
+
+      try {
+        const res = await apiRequest(`/api/tenders/${id}`, { method: "DELETE" });
+        showAlert("manage-alert", res.message || `Tender "${code}" deleted successfully.`, "success");
+        await loadTenders();
+      } catch (err) {
+        showAlert("manage-alert", `Failed to delete tender: ${err.message}`, "danger");
+      }
+    }
+
+    async function notifyTenderBidded(id, code) {
+      const confirmed = confirm(
+        `Send a formal notification to BOTH Tender Evaluation Officers and participating Bidders that the requirements for tender "${code}" are already bidded and actively in evaluation?`
+      );
+      if (!confirmed) return;
+
+      try {
+        const res = await apiRequest(`/api/tenders/${id}/notify-bidded`, { method: "POST" });
+        showAlert("manage-alert", res.message || `Notification sent to both officer and bidders successfully!`, "success");
+        if (typeof refreshNotifications === "function") {
+          refreshNotifications();
+        }
+      } catch (err) {
+        showAlert("manage-alert", `Failed to send notification: ${err.message}`, "danger");
+      }
+    }
+
+    loadTenders();
+
+  </script>
+</body>
+</html>

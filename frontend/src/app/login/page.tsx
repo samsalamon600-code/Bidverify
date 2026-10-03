@@ -20,6 +20,10 @@ import { api } from '@/services/api';
 export default function LoginPage() {
   const router = useRouter();
 
+  React.useEffect(() => {
+    window.location.replace('/login.html');
+  }, []);
+
   // Mode: 'signin' or 'signup'
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 

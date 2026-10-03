@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apply for Tender | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Offering Company / Bidder Portal</div>
+  </div>
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div id="apply-alert"></div>
+
+        <div class="gov-card">
+          <div class="gov-card-header">
+            <span>Submit Technical &amp; Financial Bid for GeM Tender</span>
+            <select id="tender-selector" class="form-select form-select-sm" style="width:360px;" onchange="window.location.href='/company/apply-tender.html?tender_id='+this.value"></select>
+          </div>
+          <div class="p-4">
+            <div id="selected-tender-banner" class="p-3 bg-light rounded border small mb-4"></div>
+
+            <form id="apply-bid-form" enctype="multipart/form-data">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold d-flex justify-content-between align-items-center mb-1">
+                    <span>Quoted Bid Amount (INR) *</span>
+                    <span class="text-muted fw-normal" id="tender-est-value-hint">Tender Ceiling: ₹0</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light fw-bold text-secondary">₹</span>
+                    <input type="number" name="quoted_amount" id="quoted_amount" class="form-control fw-bold" placeholder="e.g. 14250000" required oninput="updatePricingComparison()" />
+                  </div>
+                  <div class="mt-1" id="pricing-comparison-status"></div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Delivery Schedule (Days) *</label>
+                  <div class="input-group">
+                    <input type="number" name="delivery_days" id="delivery_days" class="form-control" value="28" min="1" required />
+                    <span class="input-group-text bg-light text-muted">Days</span>
+                  </div>
+                  <div class="form-text small">Maximum committed delivery timeframe after GeM contract award.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Offered Product Name *</label>
+                  <input type="text" name="product_name" id="product_name" class="form-control" placeholder="Product name matching tender requirements" required />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Product Model / Part Number *</label>
+                  <input type="text" name="product_model" id="product_model" class="form-control" placeholder="e.g. SPV-540-G5" required />
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold d-flex justify-content-between mb-1">
+                    <span>Make in India Local Content (%) *</span>
+                    <span class="text-primary small" id="local-content-threshold-hint">Min: >= 50%</span>
+                  </label>
+                  <div class="input-group">
+                    <input type="number" step="0.1" name="local_content_declared" id="local_content_declared" class="form-control" value="65" min="0" max="100" required oninput="validateLocalContent()" />
+                    <span class="input-group-text bg-light text-muted">%</span>
+                  </div>
+                  <div class="mt-1" id="local-content-status"></div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">OEM / Reseller Authorization Status *</label>
+                  <select name="oem_status" id="oem_status" class="form-select">
+                    <option value="Direct OEM Manufacturer">Direct OEM Manufacturer</option>
+                    <option value="Authorized OEM Partner with MAF">Authorized OEM Partner with MAF</option>
+                    <option value="Startup India / MSME Exempt">Startup India / MSME Exempt</option>
+                  </select>
+                </div>
+
+                <!-- Dynamic Technical Specifications & Thresholds Section -->
+                <div class="col-12">
+                  <div class="card border border-primary-subtle shadow-sm">
+                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold small text-dark">
+                          ⚙️ Offered Technical Specifications &amp; Required Thresholds (Customized for this Tender)
+                        </span>
+                        <span class="badge bg-primary" id="specs-count-badge">Loading...</span>
+                      </div>
+                      <span class="small text-muted d-none d-sm-inline">Verified by GeM Compliance Comparator</span>
+                    </div>
+                    <div class="card-body p-3">
+                      <div class="small text-muted mb-3">
+                        The procurement officer requires the following exact parameters &amp; thresholds for this tender.
+                        Review and specify your company's offered components &amp; technical values below:
+                      </div>
+
+                      <!-- Container where technical parameters are dynamically rendered based on the tender's requirements -->
+                      <div id="dynamic-specs-container" class="d-flex flex-column gap-3">
+                        <div class="text-center text-muted py-3 small">
+                          <span class="spinner-border spinner-border-sm me-2" role="status"></span> Loading technical parameters...
+                        </div>
+                      </div>
+
+                      <div class="mt-3 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" onclick="addCustomSpecRow()">
+                          + Add Additional Component / Specification
+                        </button>
+                        <span class="small" id="specs-compliance-summary">Evaluating compliance...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label small fw-semibold d-flex justify-content-between align-items-center mb-1">
+                    <span>Technical Specifications &amp; Bill of Materials (BOM) Summary *</span>
+                    <button type="button" class="btn btn-link btn-sm py-0 text-decoration-none" onclick="regenerateTechnicalSummary()">
+                      ↺ Regenerate from Parameters
+                    </button>
+                  </label>
+                  <textarea name="technical_summary" id="technical_summary" class="form-control" rows="2" placeholder="Summary of offered technical parameters..."></textarea>
+                </div>
+
+                <!-- Line by Line Documents Container Specified by Officer -->
+                <div class="col-12">
+                  <div class="card border border-primary-subtle shadow-sm">
+                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold small text-dark">
+                          📋 Mandatory Bid Documents (Required by Procurement Officer)
+                        </span>
+                        <span class="badge bg-primary" id="req-docs-count-badge">Loading...</span>
+                      </div>
+                      <span class="small text-muted d-none d-sm-inline">Processed with Intelligent Document Analysis &amp; Verification Pipeline</span>
+                    </div>
+                    <div class="card-body p-3">
+                      <div class="small text-muted mb-3">
+                        Please upload each required statutory and technical document mentioned by the procurement officer line by line below.
+                        Accepted formats: <code>.pdf, .png, .jpg, .jpeg, .docx</code> (Max 25 MB per file).
+                      </div>
+
+                      <!-- Container where each required document row is rendered line by line -->
+                      <div id="line-by-line-docs-container" class="d-flex flex-column gap-3">
+                        <div class="text-center text-muted py-3 small">
+                          <span class="spinner-border spinner-border-sm me-2" role="status"></span> Loading required documents list...
+                        </div>
+                      </div>
+
+                      <!-- Footer with Add Supporting Document Line and File Summary Counter -->
+                      <div class="mt-3 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" id="btn-add-custom-line" onclick="addCustomDocLine()">
+                          + Add Additional / Supporting Document Line
+                        </button>
+                        <span class="small text-muted" id="file-selection-summary">0 files selected</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="declarations_accepted" id="decl" value="true" checked required />
+                    <label class="form-check-label small" for="decl">
+                      I hereby declare that our company is not debarred/blacklisted on GeM, meets PPP-MII local content norms, and all uploaded statutory certificates are authentic.
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-12 mt-3">
+                  <button type="submit" id="submit-bid-btn" class="btn btn-primary btn-lg fw-semibold px-4 shadow-sm">
+                    <i class="bi bi-send-check me-2"></i>Submit Complete Bid Proposal to Procurement Office
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("COMPANY", "apply-tender", "Apply for GeM Tender & Submit Bid");
+
+    let currentTenderId = getQueryParam("tender_id") || "1";
+    let customDocLineCounter = 1000;
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function renderRequiredDocumentLines(requiredDocs) {
+      const container = document.getElementById("line-by-line-docs-container");
+      const badge = document.getElementById("req-docs-count-badge");
+      
+      let docsList = [];
+      if (Array.isArray(requiredDocs)) {
+        docsList = requiredDocs;
+      } else if (typeof requiredDocs === "string" && requiredDocs.trim()) {
+        try {
+          const parsed = JSON.parse(requiredDocs);
+          if (Array.isArray(parsed)) docsList = parsed;
+          else docsList = requiredDocs.split(",").map(s => s.trim()).filter(Boolean);
+        } catch (e) {
+          docsList = requiredDocs.split(",").map(s => s.trim()).filter(Boolean);
+        }
+      }
+
+      if (!docsList || docsList.length === 0) {
+        docsList = ["Technical Bid", "GST Certificate", "PAN", "Udyam/MSME Certificate", "OEM Authorization"];
+      }
+
+      if (badge) {
+        badge.textContent = `${docsList.length} Mandatory Document${docsList.length > 1 ? "s" : ""}`;
+      }
+
+      container.innerHTML = docsList.map((docName, idx) => `
+        <div class="p-3 border rounded bg-white doc-line-item shadow-2xs" id="doc-line-${idx}">
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-1">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary text-white rounded-circle" style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;">${idx + 1}</span>
+              <label class="form-label fw-bold text-dark mb-0 small" for="doc-file-input-${idx}">
+                ${escapeHtml(docName)}
+              </label>
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle small">Mandatory Document</span>
+            </div>
+            <span class="small text-muted doc-status-indicator" id="doc-status-${idx}">No file selected</span>
+          </div>
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <input
+                type="file"
+                id="doc-file-input-${idx}"
+                class="form-control form-control-sm tender-doc-file-input"
+                data-doc-name="${escapeHtml(docName)}"
+                data-index="${idx}"
+                accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx"
+                onchange="onDocFileSelected(${idx}, this)"
+              />
+            </div>
+            <div class="col-auto">
+              <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 d-none btn-clear-file" id="btn-clear-${idx}" onclick="clearDocLineFile(${idx})" title="Clear selected file">
+                ✕ Clear
+              </button>
+            </div>
+          </div>
+          <div class="small text-muted mt-1 file-info-text" id="doc-info-${idx}" style="display:none;"></div>
+        </div>
+      `).join("");
+
+      updateSelectionSummary();
+    }
+
+    function onDocFileSelected(idx, input) {
+      const statusEl = document.getElementById(`doc-status-${idx}`);
+      const infoEl = document.getElementById(`doc-info-${idx}`);
+      const clearBtn = document.getElementById(`btn-clear-${idx}`);
+
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        if (statusEl) {
+          statusEl.innerHTML = `<span class="badge bg-success">✓ Attached: ${escapeHtml(file.name)}</span>`;
+        }
+        if (infoEl) {
+          infoEl.style.display = "block";
+          infoEl.innerHTML = `<span class="text-success fw-semibold">Ready for upload &amp; Document Processing:</span> ${escapeHtml(file.name)} (${sizeMb} MB)`;
+        }
+        if (clearBtn) clearBtn.classList.remove("d-none");
+      } else {
+        if (statusEl) {
+          statusEl.innerHTML = `<span class="text-muted">No file selected</span>`;
+        }
+        if (infoEl) {
+          infoEl.style.display = "none";
+        }
+        if (clearBtn) clearBtn.classList.add("d-none");
+      }
+      updateSelectionSummary();
+    }
+
+    function clearDocLineFile(idx) {
+      const input = document.getElementById(`doc-file-input-${idx}`);
+      if (input) {
+        input.value = "";
+        onDocFileSelected(idx, input);
+      }
+    }
+
+    function addCustomDocLine() {
+      const cIdx = customDocLineCounter++;
+      const container = document.getElementById("line-by-line-docs-container");
+      const div = document.createElement("div");
+      div.className = "p-3 border rounded bg-light-subtle doc-line-item shadow-2xs";
+      div.id = `doc-line-${cIdx}`;
+      div.innerHTML = `
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-1">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary text-white rounded-circle" style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;">+</span>
+            <select class="form-select form-select-sm" id="custom-doc-name-${cIdx}" style="width:240px;" onchange="updateCustomDocType(${cIdx})">
+              <option value="Company Registration">Company Registration</option>
+              <option value="Startup India Certificate">Startup India Certificate</option>
+              <option value="NSIC Certificate">NSIC Certificate</option>
+              <option value="EPFO Documents">EPFO Documents</option>
+              <option value="ESIC Documents">ESIC Documents</option>
+              <option value="Product Certificate">Product Certificate</option>
+              <option value="Power of Attorney">Power of Attorney</option>
+              <option value="ISO Certificate">ISO Certificate</option>
+              <option value="Other Supporting Document" selected>Other Supporting Document</option>
+            </select>
+            <span class="badge bg-secondary-subtle text-dark border small">Additional Document</span>
+          </div>
+          <span class="small text-muted doc-status-indicator" id="doc-status-${cIdx}">No file selected</span>
+        </div>
+        <div class="row g-2 align-items-center">
+          <div class="col">
+            <input
+              type="file"
+              id="doc-file-input-${cIdx}"
+              class="form-control form-control-sm tender-doc-file-input"
+              data-doc-name="Other Supporting Document"
+              data-index="${cIdx}"
+              accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx"
+              onchange="onDocFileSelected(${cIdx}, this)"
+            />
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" onclick="removeCustomDocLine(${cIdx})" title="Remove line">
+              ✕ Remove Line
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-1 file-info-text" id="doc-info-${cIdx}" style="display:none;"></div>
+      `;
+      container.appendChild(div);
+      updateSelectionSummary();
+    }
+
+    function updateCustomDocType(cIdx) {
+      const sel = document.getElementById(`custom-doc-name-${cIdx}`);
+      const inp = document.getElementById(`doc-file-input-${cIdx}`);
+      if (sel && inp) {
+        inp.setAttribute("data-doc-name", sel.value);
+      }
+    }
+
+    function removeCustomDocLine(cIdx) {
+      const el = document.getElementById(`doc-line-${cIdx}`);
+      if (el) el.remove();
+      updateSelectionSummary();
+    }
+
+    function updateSelectionSummary() {
+      const inputs = document.querySelectorAll(".tender-doc-file-input");
+      let selected = 0;
+      inputs.forEach(inp => {
+        if (inp.files && inp.files[0]) selected++;
+      });
+      const summaryEl = document.getElementById("file-selection-summary");
+      if (summaryEl) {
+        summaryEl.textContent = `${selected} of ${inputs.length} document file(s) attached`;
+        summaryEl.className = selected > 0 ? "small text-success fw-bold" : "small text-muted";
+      }
+    }
+
+    let currentTenderEstimatedValue = 0;
+    let currentTenderLocalContentMin = 50;
+    let customSpecCounter = 5000;
+
+    function updatePricingComparison() {
+      const input = document.getElementById("quoted_amount");
+      const statusEl = document.getElementById("pricing-comparison-status");
+      const val = parseFloat(input.value);
+      if (isNaN(val) || val <= 0) {
+        statusEl.innerHTML = `<span class="text-muted small">Enter quoted bid amount in INR</span>`;
+        return;
+      }
+      if (!currentTenderEstimatedValue || currentTenderEstimatedValue <= 0) {
+        statusEl.innerHTML = `<span class="text-muted small">Quoted amount: ${formatINR(val)}</span>`;
+        return;
+      }
+      const diff = val - currentTenderEstimatedValue;
+      const pct = Math.abs((diff / currentTenderEstimatedValue) * 100).toFixed(1);
+      if (diff <= 0) {
+        statusEl.innerHTML = `
+          <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2">
+            ✓ Within Budget Ceiling (${pct}% below estimated tender budget of ${formatINR(currentTenderEstimatedValue)})
+          </span>
+        `;
+      } else {
+        statusEl.innerHTML = `
+          <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-1 px-2">
+            ⚠ Exceeds Estimated Ceiling (${pct}% above estimated budget of ${formatINR(currentTenderEstimatedValue)})
+          </span>
+        `;
+      }
+    }
+
+    function validateLocalContent() {
+      const inp = document.getElementById("local_content_declared");
+      const statusEl = document.getElementById("local-content-status");
+      const val = parseFloat(inp.value);
+      if (isNaN(val)) {
+        statusEl.innerHTML = "";
+        return;
+      }
+      if (val >= currentTenderLocalContentMin) {
+        statusEl.innerHTML = `<span class="text-success small fw-semibold">✓ Meets PPP-MII threshold (Min ${currentTenderLocalContentMin}%)</span>`;
+      } else {
+        statusEl.innerHTML = `<span class="text-danger small fw-semibold">⚠ Non-compliant! Below minimum requirement of ${currentTenderLocalContentMin}%</span>`;
+      }
+    }
+
+    function suggestProductDetails(tender) {
+      const title = (tender.title || "").toLowerCase();
+      const cat = (tender.category || "").toLowerCase();
+      const prodNameInput = document.getElementById("product_name");
+      const prodModelInput = document.getElementById("product_model");
+
+      if (title.includes("solar") || cat.includes("solar")) {
+        prodNameInput.value = "High-Efficiency Bifacial Solar PV Modules & Inverter System";
+        prodModelInput.value = "SPV-540-G5";
+      } else if (title.includes("cctv") || title.includes("camera") || cat.includes("cctv")) {
+        prodNameInput.value = "4MP Ultra-HD Night Vision IP Surveillance Camera System";
+        prodModelInput.value = "SEC-4MP-IP67";
+      } else if (title.includes("monitor") || title.includes("icu") || cat.includes("medical")) {
+        prodNameInput.value = "Advanced Multi-Parameter ICU Bedside Patient Monitor";
+        prodModelInput.value = "MED-ICU-12X";
+      } else if (title.includes("switch") || title.includes("network") || title.includes("firewall")) {
+        prodNameInput.value = "Managed Layer-3 Core Datacenter Switch Appliance";
+        prodModelInput.value = "NET-L3-CORE-48G";
+      } else if (title.includes("workstation") || title.includes("compute") || cat.includes("it hardware")) {
+        prodNameInput.value = "ApexPro Enterprise Compute Workstation";
+        prodModelInput.value = "APX-2026-G10";
+      } else {
+        prodNameInput.value = tender.title ? `Offered: ${tender.title}` : "Enterprise Compliant Offering";
+        prodModelInput.value = `MOD-${(tender.tender_code || "2026").split("/").pop()}-G1`;
+      }
+    }
+
+    function parseRequirementsFromText(text) {
+      if (!text) return [];
+      const parts = text.split(",").map(p => p.trim()).filter(Boolean);
+      const result = [];
+      parts.forEach(part => {
+        const match = part.match(/^([^><=!]+)\s*(>=|<=|==|>|<)\s*([^A-Za-z0-9\s]*\s*[\w\d.]+)\s*(.*)$/);
+        if (match) {
+          result.push({
+            parameter_name: match[1].trim(),
+            operator: match[2].trim(),
+            required_value: match[3].trim(),
+            unit: match[4] ? match[4].trim() : "",
+            category: "TECHNICAL",
+            is_mandatory: true
+          });
+        } else {
+          result.push({
+            parameter_name: part,
+            operator: ">=",
+            required_value: "1",
+            unit: "",
+            category: "TECHNICAL",
+            is_mandatory: true
+          });
+        }
+      });
+      return result;
+    }
+
+    function renderDynamicTechnicalParameters(t) {
+      const container = document.getElementById("dynamic-specs-container");
+      const badge = document.getElementById("specs-count-badge");
+      
+      let reqs = (t.structured_requirements && t.structured_requirements.length) 
+        ? t.structured_requirements 
+        : parseRequirementsFromText(t.technical_requirements);
+
+      if (!reqs || !reqs.length) {
+        reqs = [
+          { parameter_name: "RAM", operator: ">=", required_value: "16", unit: "GB", category: "TECHNICAL", is_mandatory: true },
+          { parameter_name: "SSD", operator: ">=", required_value: "512", unit: "GB", category: "TECHNICAL", is_mandatory: true },
+          { parameter_name: "Warranty", operator: ">=", required_value: "3", unit: "Years", category: "TECHNICAL", is_mandatory: true }
+        ];
+      }
+
+      badge.textContent = `${reqs.length} Parameter${reqs.length > 1 ? 's' : ''}`;
+
+      container.innerHTML = reqs.map((req, idx) => {
+        const isBool = ["yes", "no", "true", "false"].includes(String(req.required_value).toLowerCase());
+        const opDisplay = req.operator || ">=";
+        const reqDisplay = `${opDisplay} ${req.required_value} ${req.unit || ""}`.trim();
+        let defaultValue = req.required_value;
+        
+        return `
+          <div class="p-3 border rounded bg-white tender-spec-row shadow-2xs" 
+               id="spec-row-${idx}"
+               data-param-name="${escapeHtml(req.parameter_name)}"
+               data-param-unit="${escapeHtml(req.unit || '')}"
+               data-param-category="${escapeHtml(req.category || 'TECHNICAL')}"
+               data-operator="${escapeHtml(opDisplay)}"
+               data-required-value="${escapeHtml(req.required_value)}">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary text-white rounded-circle" style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;">${idx + 1}</span>
+                <label class="form-label fw-bold text-dark mb-0 small" for="spec-input-${idx}">
+                  ${escapeHtml(req.parameter_name)}
+                </label>
+                <span class="badge bg-secondary-subtle text-secondary border small">${escapeHtml(req.category || 'TECHNICAL')}</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
+                  Tender Required Threshold: <strong>${escapeHtml(reqDisplay)}</strong>
+                </span>
+              </div>
+            </div>
+            <div class="row g-2 align-items-center">
+              <div class="col-md-7 col-sm-8">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted small">Your Offered Specification</span>
+                  ${isBool ? `
+                    <select class="form-select form-select-sm spec-input-value" id="spec-input-${idx}" onchange="validateSpecRow(${idx})">
+                      <option value="Yes" ${String(defaultValue).toLowerCase() === 'yes' ? 'selected' : ''}>Yes</option>
+                      <option value="No" ${String(defaultValue).toLowerCase() === 'no' ? 'selected' : ''}>No</option>
+                    </select>
+                  ` : `
+                    <input 
+                      type="text" 
+                      class="form-control form-control-sm spec-input-value fw-semibold" 
+                      id="spec-input-${idx}" 
+                      value="${escapeHtml(defaultValue)}" 
+                      required 
+                      oninput="validateSpecRow(${idx})" 
+                      placeholder="Enter your offered value" 
+                    />
+                  `}
+                  ${req.unit ? `<span class="input-group-text bg-light text-dark fw-semibold">${escapeHtml(req.unit)}</span>` : ''}
+                </div>
+              </div>
+              <div class="col-md-5 col-sm-4">
+                <div class="spec-validation-status small" id="spec-val-status-${idx}"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      reqs.forEach((_, idx) => validateSpecRow(idx));
+      updateSpecsComplianceSummary();
+    }
+
+    function validateSpecRow(idx) {
+      const row = document.getElementById(`spec-row-${idx}`);
+      if (!row) return;
+      const op = row.dataset.operator;
+      const reqVal = row.dataset.requiredValue;
+      const unit = row.dataset.paramUnit || "";
+      const inputEl = row.querySelector(".spec-input-value");
+      const statusEl = document.getElementById(`spec-val-status-${idx}`);
+      if (!inputEl || !statusEl) return;
+
+      const subVal = inputEl.value.trim();
+      if (subVal === "") {
+        statusEl.innerHTML = `<span class="text-danger small">Value required</span>`;
+        updateSpecsComplianceSummary();
+        return;
+      }
+
+      const reqNum = parseFloat(reqVal);
+      const subNum = parseFloat(subVal);
+
+      let isCompliant = true;
+      let reason = "Meets tender threshold";
+
+      if (!isNaN(reqNum) && !isNaN(subNum)) {
+        if (op === ">=" && subNum < reqNum) {
+          isCompliant = false;
+          reason = `Below required minimum (${subNum} < ${reqVal} ${unit})`;
+        } else if (op === "<=" && subNum > reqNum) {
+          isCompliant = false;
+          reason = `Exceeds required maximum (${subNum} > ${reqVal} ${unit})`;
+        } else if (op === "==" && Math.abs(subNum - reqNum) > 0.0001) {
+          isCompliant = false;
+          reason = `Must exactly match ${reqVal} ${unit}`;
+        }
+      } else {
+        if (op === "==" && subVal.toLowerCase() !== reqVal.toLowerCase()) {
+          isCompliant = false;
+          reason = `Must be '${reqVal}'`;
+        }
+      }
+
+      if (isCompliant) {
+        statusEl.innerHTML = `<span class="text-success fw-semibold">✓ Meets Threshold (${escapeHtml(subVal)} ${escapeHtml(unit)})</span>`;
+        row.classList.remove("border-danger");
+        row.classList.add("border-success-subtle");
+      } else {
+        statusEl.innerHTML = `<span class="text-danger fw-semibold">⚠ ${escapeHtml(reason)}</span>`;
+        row.classList.remove("border-success-subtle");
+        row.classList.add("border-danger");
+      }
+
+      updateSpecsComplianceSummary();
+    }
+
+    function updateSpecsComplianceSummary() {
+      const rows = document.querySelectorAll(".tender-spec-row");
+      let compliantCount = 0;
+      rows.forEach((_, i) => {
+        const statusEl = document.getElementById(`spec-val-status-${i}`);
+        if (statusEl && statusEl.textContent.includes("✓")) compliantCount++;
+      });
+      const summaryEl = document.getElementById("specs-compliance-summary");
+      if (summaryEl) {
+        if (compliantCount === rows.length) {
+          summaryEl.innerHTML = `<span class="badge bg-success">✓ All ${rows.length} technical specifications compliant with tender thresholds</span>`;
+        } else {
+          summaryEl.innerHTML = `<span class="badge bg-warning text-dark">⚠ ${compliantCount} of ${rows.length} specifications compliant (${rows.length - compliantCount} need attention)</span>`;
+        }
+      }
+    }
+
+    function addCustomSpecRow() {
+      const cIdx = customSpecCounter++;
+      const container = document.getElementById("dynamic-specs-container");
+      const div = document.createElement("div");
+      div.className = "p-3 border rounded bg-light-subtle tender-spec-row shadow-2xs";
+      div.id = `spec-row-${cIdx}`;
+      div.dataset.operator = ">=";
+      div.dataset.paramCategory = "TECHNICAL";
+      div.dataset.paramUnit = "";
+      div.dataset.requiredValue = "0";
+
+      div.innerHTML = `
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary text-white rounded-circle" style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;">+</span>
+            <input type="text" class="form-control form-control-sm custom-param-name fw-bold" placeholder="Parameter Name (e.g. Inverter Rating)" style="width:240px;" oninput="updateCustomParamName(${cIdx}, this)" required />
+            <span class="badge bg-info-subtle text-info-emphasis border small">Additional Specification</span>
+          </div>
+          <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removeCustomSpecRow(${cIdx})" title="Remove this parameter">&times; Remove</button>
+        </div>
+        <div class="row g-2 align-items-center">
+          <div class="col-md-7 col-sm-8">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light text-muted small">Offered Specification</span>
+              <input type="text" class="form-control form-control-sm spec-input-value fw-semibold" id="spec-input-${cIdx}" placeholder="Value" required oninput="validateSpecRow(${cIdx})" />
+              <input type="text" class="form-control form-control-sm custom-param-unit" placeholder="Unit (e.g. kVA, %)" style="max-width:110px;" oninput="updateCustomParamUnit(${cIdx}, this)" />
+            </div>
+          </div>
+          <div class="col-md-5 col-sm-4">
+            <div class="spec-validation-status small" id="spec-val-status-${cIdx}">
+              <span class="text-success fw-semibold">✓ Additional Bid Specification</span>
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+      updateSpecsComplianceSummary();
+    }
+
+    function updateCustomParamName(cIdx, input) {
+      const row = document.getElementById(`spec-row-${cIdx}`);
+      if (row) row.dataset.paramName = input.value.trim();
+    }
+
+    function updateCustomParamUnit(cIdx, input) {
+      const row = document.getElementById(`spec-row-${cIdx}`);
+      if (row) row.dataset.paramUnit = input.value.trim();
+    }
+
+    function removeCustomSpecRow(cIdx) {
+      const row = document.getElementById(`spec-row-${cIdx}`);
+      if (row) row.remove();
+      updateSpecsComplianceSummary();
+    }
+
+    function regenerateTechnicalSummary() {
+      const rows = document.querySelectorAll(".tender-spec-row");
+      const summaryParts = [];
+      rows.forEach(row => {
+        const pName = row.dataset.paramName || (row.querySelector(".custom-param-name") ? row.querySelector(".custom-param-name").value.trim() : "");
+        const unit = row.dataset.paramUnit || (row.querySelector(".custom-param-unit") ? row.querySelector(".custom-param-unit").value.trim() : "");
+        const inputEl = row.querySelector(".spec-input-value");
+        if (pName && inputEl && inputEl.value.trim()) {
+          summaryParts.push(`${pName}: ${inputEl.value.trim()}${unit ? ' ' + unit : ''}`);
+        }
+      });
+      const summaryEl = document.getElementById("technical_summary");
+      if (summaryEl) {
+        summaryEl.value = summaryParts.join(", ") + ". Meets all statutory and technical tender requirements.";
+      }
+    }
+
+    async function initApplyPage() {
+      try {
+        const tListRes = await apiRequest("/api/tenders");
+        const tenders = tListRes.tenders || [];
+        if (tenders.length && !getQueryParam("tender_id")) {
+          currentTenderId = String(tenders[0].id);
+        }
+        document.getElementById("tender-selector").innerHTML = tenders.map(t => `
+          <option value="${t.id}" ${String(t.id) === String(currentTenderId) ? "selected" : ""}>
+            ${t.tender_code} — ${t.title}
+          </option>
+        `).join("");
+
+        const tRes = await apiRequest(`/api/tenders/${currentTenderId}`);
+        const t = tRes.tender;
+
+        currentTenderEstimatedValue = parseFloat(t.estimated_value) || 0;
+        currentTenderLocalContentMin = parseFloat(t.local_content_requirements) || 50;
+
+        document.getElementById("tender-est-value-hint").textContent = `Tender Ceiling: ${formatINR(t.estimated_value)}`;
+        document.getElementById("quoted_amount").value = Math.round((currentTenderEstimatedValue || 10000000) * 0.95);
+        document.getElementById("local-content-threshold-hint").textContent = `Min: >= ${currentTenderLocalContentMin}%`;
+        document.getElementById("local_content_declared").value = Math.max(65, currentTenderLocalContentMin);
+
+        suggestProductDetails(t);
+        updatePricingComparison();
+        validateLocalContent();
+
+        let biddedNoticeHtml = "";
+        if (t.has_bidded) {
+          biddedNoticeHtml = `
+            <div class="alert alert-warning border border-warning d-flex flex-wrap align-items-center justify-content-between p-3 mt-2 mb-0">
+              <div>
+                <strong>Notice:</strong> Your company has already bidded on this tender requirement (Bid: <strong>${t.existing_bid_number}</strong>).
+                <div class="small text-muted mt-1">Status: ${t.existing_bid_status || 'SUBMITTED'}. Submitting again will register an additional bid revision.</div>
+              </div>
+              <a href="/company/submission-status.html?bid_id=${t.existing_bid_id}" class="btn btn-dark btn-sm fw-semibold mt-2 mt-sm-0">
+                View Submitted Bid &rarr;
+              </a>
+            </div>
+          `;
+        }
+
+        document.getElementById("selected-tender-banner").innerHTML = `
+          <div class="fw-bold text-dark">${t.tender_code}: ${t.title}</div>
+          <div><strong>Department:</strong> ${t.department} &nbsp;|&nbsp; <strong>Estimated Value (Ceiling):</strong> <span class="badge bg-primary text-white">${formatINR(t.estimated_value)}</span> &nbsp;|&nbsp; <strong>Closing Date:</strong> ${t.closing_date}</div>
+          <div class="mt-1"><strong>Required Thresholds:</strong> ${t.technical_requirements || "-"} | <strong>Required Docs:</strong> ${Array.isArray(t.required_documents) ? t.required_documents.join(", ") : (t.required_documents || "None")}</div>
+          ${biddedNoticeHtml}
+        `;
+
+        // Render dynamic technical parameters matching exact tender thresholds
+        renderDynamicTechnicalParameters(t);
+        regenerateTechnicalSummary();
+
+        // Render line-by-line mandatory documents as specified by the procurement officer
+        renderRequiredDocumentLines(t.required_documents);
+
+      } catch (err) {
+        showAlert("apply-alert", err.message);
+      }
+    }
+
+    document.getElementById("apply-bid-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("submit-bid-btn");
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting Bid &amp; Processing Documents...`;
+      try {
+        const formData = new FormData(e.target);
+        formData.delete("documents");
+        formData.delete("declared_doc_types");
+
+        // 1. Gather all line-by-line uploaded files
+        const fileInputs = document.querySelectorAll(".tender-doc-file-input");
+        let attachedCount = 0;
+        fileInputs.forEach((inp) => {
+          if (inp.files && inp.files[0]) {
+            const docName = inp.getAttribute("data-doc-name") || "Document";
+            formData.append("documents", inp.files[0]);
+            formData.append("declared_doc_types", docName);
+            attachedCount++;
+          }
+        });
+
+        // 2. Gather dynamic technical specifications
+        const specsPayload = [];
+        document.querySelectorAll(".tender-spec-row").forEach(row => {
+          const pName = row.dataset.paramName || (row.querySelector(".custom-param-name") ? row.querySelector(".custom-param-name").value.trim() : "");
+          const pUnit = row.dataset.paramUnit || (row.querySelector(".custom-param-unit") ? row.querySelector(".custom-param-unit").value.trim() : "");
+          const pCat = row.dataset.paramCategory || "TECHNICAL";
+          const inputEl = row.querySelector(".spec-input-value");
+          if (pName && inputEl && inputEl.value !== "") {
+            specsPayload.push({
+              parameter_name: pName,
+              submitted_value: inputEl.value.trim(),
+              unit: pUnit,
+              item_category: pCat
+            });
+          }
+        });
+        formData.set("technical_specifications", JSON.stringify(specsPayload));
+
+        // 3. Shorthand fields for backward compatibility
+        const ramItem = specsPayload.find(s => s.parameter_name.toLowerCase() === "ram");
+        if (ramItem) formData.set("ram_gb", parseFloat(ramItem.submitted_value) || 16);
+
+        const ssdItem = specsPayload.find(s => s.parameter_name.toLowerCase().includes("ssd"));
+        if (ssdItem) formData.set("ssd_gb", parseFloat(ssdItem.submitted_value) || 512);
+
+        const warrantyItem = specsPayload.find(s => s.parameter_name.toLowerCase().includes("warranty"));
+        if (warrantyItem) {
+          const wNum = parseFloat(warrantyItem.submitted_value);
+          if (!isNaN(wNum)) formData.set("warranty_years", wNum);
+        }
+
+        const res = await apiRequest(`/api/tenders/${currentTenderId}/bids`, {
+          method: "POST",
+          body: formData,
+        });
+
+        showAlert(
+          "apply-alert",
+          `✓ Bid <strong>${res.bid.bid_number}</strong> has been officially submitted to the Procurement Office for verification with ${specsPayload.length} technical parameter(s) and ${attachedCount} attached document(s)! Redirecting to Bid Submission Status...`,
+          "success"
+        );
+        setTimeout(() => {
+          window.location.href = `/company/submission-status.html?bid_id=${res.bid.id}`;
+        }, 1100);
+      } catch (err) {
+        showAlert("apply-alert", `Submission failed: ${err.message}`, "danger");
+        btn.disabled = false;
+        btn.innerHTML = `<i class="bi bi-send-check me-2"></i>Submit Complete Bid Proposal to Procurement Office`;
+      }
+    });
+
+    initApplyPage();
+  </script>
+</body>
+</html>

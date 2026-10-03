@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Tender | BidVerify</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link href="/css/styles.css?v=22" rel="stylesheet" />
+</head>
+<body>
+  <div class="gov-top-strip">
+    <div class="container-fluid px-4">Government of India &bull; GeM Procurement Officer Portal</div>
+  </div>
+
+  <div class="app-wrapper">
+    <aside id="app-sidebar" class="app-sidebar"></aside>
+    <main class="app-main">
+      <header id="app-header" class="app-header"></header>
+      <div class="app-content">
+        <div id="create-tender-alert"></div>
+
+        <div class="gov-card">
+          <div class="gov-card-header">
+            <span>Publish New GeM Procurement Tender &amp; Compliance Rules</span>
+            <a href="/officer/manage-tenders.html" class="btn btn-sm btn-outline-secondary">View All Tenders</a>
+          </div>
+          <div class="p-4">
+            <form id="create-tender-form" enctype="multipart/form-data">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Tender ID / GeM Bid Number</label>
+                  <input type="text" name="tender_code" id="tender_code" class="form-control" required />
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label fw-semibold small">Tender Title</label>
+                  <input type="text" name="title" class="form-control" placeholder="e.g. Procurement of 100 AI Compute Servers with 3-Year Warranty" required />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Department / Organization</label>
+                  <input type="text" name="department" class="form-control" value="Ministry of Electronics & Information Technology (MeitY)" required />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small">Category / Domain</label>
+                  <select name="category" id="tender-category-select" class="form-select" onchange="handleCategoryChange(this.value)">
+                    <option value="IT Hardware & Enterprise Workstations">IT Hardware &amp; Enterprise Workstations</option>
+                    <option value="CCTV Surveillance & Security Systems">CCTV Surveillance &amp; Security Systems</option>
+                    <option value="Medical Devices & Hospital Telemetry">Medical Devices &amp; Hospital Telemetry</option>
+                    <option value="Solar PV, Inverters & Clean Energy">Solar PV, Inverters &amp; Clean Energy</option>
+                    <option value="Vehicles, Ambulances & Fleet Transportation">Vehicles, Ambulances &amp; Fleet Transportation</option>
+                    <option value="Networking & Telecommunication Infrastructure">Networking &amp; Telecommunication Infrastructure</option>
+                    <option value="Office Equipment, Furniture & Stationery">Office Equipment, Furniture &amp; Stationery</option>
+                    <option value="Civil Works, Maintenance & Facility Services">Civil Works, Maintenance &amp; Facility Services</option>
+                    <option value="CUSTOM">+ Custom Domain / Category (Type Below)</option>
+                  </select>
+                  <input type="text" id="custom-category-input" class="form-control form-control-sm mt-1 d-none" placeholder="Enter custom category name..." />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small">Estimated Value (INR)</label>
+                  <input type="number" name="estimated_value" class="form-control" value="15000000" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Publication Date</label>
+                  <input type="date" name="publication_date" class="form-control" value="2026-09-26" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Closing Date</label>
+                  <input type="date" name="closing_date" class="form-control" value="2026-11-15" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Make in India Local Content Min (%)</label>
+                  <input type="number" name="local_content_requirements" class="form-control" value="50" min="0" max="100" required />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Description &amp; Scope of Supply</label>
+                  <textarea name="description" id="tender_description" class="form-control" rows="2" placeholder="Describe the items, equipment, services, scope of supply, and warranty terms under GeM GTC...">Supply, installation, testing, and comprehensive on-site warranty under GeM General Terms & Conditions (GTC).</textarea>
+                </div>
+
+                <!-- Customizable Technical & Compliance Specifications Builder -->
+                <div class="col-12">
+                  <div class="p-3 bg-light rounded border">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                      <div>
+                        <div class="fw-bold text-dark">Customizable Technical &amp; Compliance Specifications</div>
+                        <div class="text-muted small">Configure custom parameter rules, thresholds, and operators for any tender. The AI compliance engine will evaluate bidder submissions against these criteria.</div>
+                      </div>
+                      <div class="d-flex gap-2 mt-2 mt-sm-0">
+                        <div class="dropdown">
+                          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-collection me-1"></i> Load Domain Template
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end shadow-sm small">
+                            <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="loadTemplate('IT')"><i class="bi bi-pc-display me-2 text-primary"></i> IT &amp; Workstations</a></li>
+                            <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="loadTemplate('CCTV')"><i class="bi bi-camera-video me-2 text-primary"></i> CCTV Surveillance</a></li>
+                            <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="loadTemplate('MEDICAL')"><i class="bi bi-heart-pulse me-2 text-primary"></i> Medical &amp; Telemetry</a></li>
+                            <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="loadTemplate('SOLAR')"><i class="bi bi-sun me-2 text-primary"></i> Solar &amp; Renewable Energy</a></li>
+                            <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="loadTemplate('VEHICLE')"><i class="bi bi-truck me-2 text-primary"></i> Vehicles &amp; Transportation</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger d-flex align-items-center" href="javascript:void(0)" onclick="clearAllSpecs()"><i class="bi bi-trash3 me-2"></i> Clear All Rows</a></li>
+                          </ul>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary fw-semibold" onclick="addSpecRow()">
+                          + Add Custom Parameter
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="table-responsive">
+                      <table class="table table-sm table-bordered bg-white small mb-2 align-middle">
+                        <thead class="table-light">
+                          <tr>
+                            <th style="width: 15%;">Category</th>
+                            <th style="width: 25%;">Parameter Name</th>
+                            <th style="width: 14%;">Operator</th>
+                            <th style="width: 21%;">Required Value / Threshold</th>
+                            <th style="width: 11%;">Unit</th>
+                            <th style="width: 7%; text-align: center;">Mandatory</th>
+                            <th style="width: 7%; text-align: center;">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="specs-tbody">
+                          <!-- Dynamic rows populated via JS -->
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="text-muted small" id="specs-counter">0 specifications defined</span>
+                      <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSpecRow()">
+                        + Add Another Parameter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Eligibility Requirements</label>
+                  <textarea name="eligibility_requirements" class="form-control" rows="2" placeholder="e.g. Minimum supply experience, turnover, past performance...">Minimum 3 years OEM / Authorized Partner supply experience; Valid ISO 9001 & BIS Certificate.</textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Technical Requirements Summary</label>
+                  <textarea name="technical_requirements" id="technical_requirements" class="form-control" rows="2" placeholder="Summary of overall technical specifications...">Comprehensive technical specifications meeting tender parameters.</textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Statutory Requirements</label>
+                  <textarea name="statutory_requirements" class="form-control" rows="2">Active 15-digit GSTIN, Corporate PAN, Udyam MSME Registration, EPFO & ESIC compliance.</textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">OEM Requirements</label>
+                  <textarea name="oem_requirements" class="form-control" rows="2">Direct OEM or Authorized Reseller with tender-specific Manufacturer Authorization Form (MAF).</textarea>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Mandatory Documents (Comma-separated)</label>
+                  <input type="text" name="required_documents" id="required_documents" class="form-control" value="Technical Bid, GST Certificate, PAN, Udyam/MSME Certificate, OEM Authorization" />
+                  <div class="mt-1 d-flex flex-wrap gap-1" style="font-size:0.73rem;">
+                    <span class="text-muted">Click to add:</span>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('Technical Bid')">+ Technical Bid</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('GST Certificate')">+ GST</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('PAN')">+ PAN</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('Udyam/MSME Certificate')">+ Udyam</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('OEM Authorization')">+ OEM MAF</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('ISO 9001 Certificate')">+ ISO 9001</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('BIS Certification')">+ BIS</button>
+                    <button type="button" class="badge bg-light text-dark border btn py-0 px-1" onclick="addDocTag('CE / FDA Approval')">+ CE/FDA</button>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Other Tender-Specific Requirements</label>
+                  <input type="text" name="other_requirements" class="form-control" value="Zero debarment record on GeM / DoE public watchlist" />
+                </div>
+
+                <div class="col-12 mt-4 d-flex gap-2">
+                  <button type="submit" id="submit-tender-btn" class="btn btn-primary px-4 fw-semibold">
+                    Save &amp; Publish GeM Tender
+                  </button>
+                  <a href="/officer/manage-tenders.html" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Recent GeM Tenders Card -->
+        <div class="gov-card mt-4">
+          <div class="gov-card-header d-flex justify-content-between align-items-center">
+            <span>Recent GeM Tenders</span>
+            <a href="/officer/manage-tenders.html" class="btn btn-sm btn-outline-primary">Manage All Tenders</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-gov table-hover mb-0 small">
+              <thead>
+                <tr>
+                  <th>Tender ID</th>
+                  <th>Title &amp; Dept</th>
+                  <th>Category</th>
+                  <th>Est. Value</th>
+                  <th>Closing Date</th>
+                  <th>Bids</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-tenders-tbody">
+                <tr><td colspan="8" class="text-center text-muted py-3">Loading recent tenders...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js?v=22"></script>
+  <script>
+    initAuthenticatedLayout("PROCUREMENT_OFFICER", "create-tender", "Create & Publish GeM Tender");
+    document.getElementById("tender_code").value = "GEM/2026/B/" + Math.floor(5100000 + Math.random() * 800000);
+
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function handleCategoryChange(val) {
+      const customInput = document.getElementById("custom-category-input");
+      if (val === "CUSTOM") {
+        customInput.classList.remove("d-none");
+        customInput.focus();
+      } else {
+        customInput.classList.add("d-none");
+      }
+    }
+
+    function addDocTag(docName) {
+      const input = document.getElementById("required_documents");
+      const current = input.value.split(",").map(s => s.trim()).filter(Boolean);
+      if (!current.includes(docName)) {
+        current.push(docName);
+        input.value = current.join(", ");
+      }
+    }
+
+    function updateSpecsCounter() {
+      const count = document.querySelectorAll("#specs-tbody tr").length;
+      const counter = document.getElementById("specs-counter");
+      if (counter) {
+        counter.textContent = `${count} specification${count === 1 ? '' : 's'} defined`;
+      }
+    }
+
+    function addSpecRow(category = "TECHNICAL", name = "", operator = ">=", value = "", unit = "", isMandatory = true) {
+      const tbody = document.getElementById("specs-tbody");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <select class="form-select form-select-sm spec-cat">
+            <option value="TECHNICAL" ${category === "TECHNICAL" ? "selected" : ""}>Technical</option>
+            <option value="COMMERCIAL" ${category === "COMMERCIAL" ? "selected" : ""}>Commercial</option>
+            <option value="STATUTORY" ${category === "STATUTORY" ? "selected" : ""}>Statutory</option>
+            <option value="ELIGIBILITY" ${category === "ELIGIBILITY" ? "selected" : ""}>Eligibility</option>
+            <option value="QUALITY" ${category === "QUALITY" ? "selected" : ""}>Quality / Standard</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm spec-name" placeholder="e.g. RAM, Resolution" value="${escapeHtml(name)}" required />
+        </td>
+        <td>
+          <select class="form-select form-select-sm spec-op">
+            <option value=">=" ${operator === ">=" ? "selected" : ""}>&gt;= (Min)</option>
+            <option value="<=" ${operator === "<=" ? "selected" : ""}>&lt;= (Max)</option>
+            <option value="==" ${operator === "==" ? "selected" : ""}>== (Exact)</option>
+            <option value="IN" ${operator === "IN" ? "selected" : ""}>IN (Allowed list)</option>
+            <option value="CONTAINS" ${operator === "CONTAINS" ? "selected" : ""}>CONTAINS</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm spec-val" placeholder="Value or text" value="${escapeHtml(value)}" required />
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm spec-unit" placeholder="GB, MP, Yrs, etc." value="${escapeHtml(unit)}" />
+        </td>
+        <td class="text-center">
+          <input type="checkbox" class="form-check-input spec-mandatory" ${isMandatory ? "checked" : ""} />
+        </td>
+        <td class="text-center">
+          <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="removeSpecRow(this)" title="Remove parameter">&times;</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      updateSpecsCounter();
+    }
+
+    function removeSpecRow(btn) {
+      const tr = btn.closest("tr");
+      if (tr) {
+        tr.remove();
+        updateSpecsCounter();
+      }
+    }
+
+    function clearAllSpecs() {
+      const tbody = document.getElementById("specs-tbody");
+      tbody.innerHTML = "";
+      updateSpecsCounter();
+    }
+
+    const SPEC_TEMPLATES = {
+      IT: [
+        { category: "TECHNICAL", name: "RAM", operator: ">=", value: "16", unit: "GB", isMandatory: true },
+        { category: "TECHNICAL", name: "SSD Storage", operator: ">=", value: "512", unit: "GB", isMandatory: true },
+        { category: "TECHNICAL", name: "CPU Cores", operator: ">=", value: "8", unit: "Cores", isMandatory: true },
+        { category: "TECHNICAL", name: "Display Size", operator: ">=", value: "23.8", unit: "Inches", isMandatory: false },
+        { category: "COMMERCIAL", name: "Warranty", operator: ">=", value: "3", unit: "Years", isMandatory: true },
+        { category: "STATUTORY", name: "Make In India (MII) Local Content", operator: ">=", value: "50", unit: "%", isMandatory: true }
+      ],
+      CCTV: [
+        { category: "TECHNICAL", name: "Camera Resolution", operator: ">=", value: "4", unit: "MP", isMandatory: true },
+        { category: "TECHNICAL", name: "IR Night Vision Distance", operator: ">=", value: "30", unit: "Meters", isMandatory: true },
+        { category: "TECHNICAL", name: "NVR Storage Capacity", operator: ">=", value: "8", unit: "TB", isMandatory: true },
+        { category: "TECHNICAL", name: "Ingress Protection Rating", operator: "==", value: "IP67", unit: "", isMandatory: true },
+        { category: "TECHNICAL", name: "Frame Rate", operator: ">=", value: "30", unit: "fps", isMandatory: false },
+        { category: "COMMERCIAL", name: "Warranty", operator: ">=", value: "3", unit: "Years", isMandatory: true },
+        { category: "STATUTORY", name: "BIS CRS Certification", operator: "==", value: "Yes", unit: "", isMandatory: true }
+      ],
+      MEDICAL: [
+        { category: "TECHNICAL", name: "Display Screen Size", operator: ">=", value: "12.1", unit: "Inches", isMandatory: true },
+        { category: "TECHNICAL", name: "Battery Backup Duration", operator: ">=", value: "4", unit: "Hours", isMandatory: true },
+        { category: "TECHNICAL", name: "SpO2 Measurement Accuracy", operator: "<=", value: "2", unit: "%", isMandatory: true },
+        { category: "TECHNICAL", name: "NIBP Measurement Range", operator: ">=", value: "250", unit: "mmHg", isMandatory: true },
+        { category: "STATUTORY", name: "CE / US FDA Clearance", operator: "==", value: "Yes", unit: "", isMandatory: true },
+        { category: "STATUTORY", name: "ISO 13485 Medical Device Certification", operator: "==", value: "Yes", unit: "", isMandatory: true },
+        { category: "COMMERCIAL", name: "Comprehensive AMC / Warranty", operator: ">=", value: "5", unit: "Years", isMandatory: true }
+      ],
+      SOLAR: [
+        { category: "TECHNICAL", name: "Solar Module Capacity", operator: ">=", value: "540", unit: "Wp", isMandatory: true },
+        { category: "TECHNICAL", name: "Module Efficiency", operator: ">=", value: "21", unit: "%", isMandatory: true },
+        { category: "TECHNICAL", name: "Inverter Efficiency", operator: ">=", value: "98", unit: "%", isMandatory: true },
+        { category: "TECHNICAL", name: "Warranty on Module Output (90%)", operator: ">=", value: "10", unit: "Years", isMandatory: true },
+        { category: "TECHNICAL", name: "Linear Degradation Warranty (80%)", operator: ">=", value: "25", unit: "Years", isMandatory: true },
+        { category: "STATUTORY", name: "ALMM Listed Manufacturer", operator: "==", value: "Yes", unit: "", isMandatory: true },
+        { category: "STATUTORY", name: "IEC 61215 / BIS IS 14286", operator: "==", value: "Yes", unit: "", isMandatory: true }
+      ],
+      VEHICLE: [
+        { category: "TECHNICAL", name: "Engine Displacement", operator: ">=", value: "1498", unit: "cc", isMandatory: true },
+        { category: "TECHNICAL", name: "Fuel Efficiency (ARAI)", operator: ">=", value: "18", unit: "km/l", isMandatory: false },
+        { category: "TECHNICAL", name: "Emission Norms", operator: "==", value: "BS-VI Stage 2", unit: "", isMandatory: true },
+        { category: "TECHNICAL", name: "Airbags Count", operator: ">=", value: "6", unit: "Units", isMandatory: true },
+        { category: "TECHNICAL", name: "Seating Capacity", operator: ">=", value: "5", unit: "Seats", isMandatory: true },
+        { category: "COMMERCIAL", name: "Standard OEM Warranty", operator: ">=", value: "3", unit: "Years", isMandatory: true },
+        { category: "COMMERCIAL", name: "Roadside Assistance (RSA)", operator: ">=", value: "3", unit: "Years", isMandatory: false }
+      ]
+    };
+
+    function loadTemplate(type) {
+      const template = SPEC_TEMPLATES[type];
+      if (!template) return;
+      clearAllSpecs();
+      template.forEach(item => {
+        addSpecRow(item.category, item.name, item.operator, item.value, item.unit, item.isMandatory);
+      });
+
+      // Also adjust the category dropdown to match if appropriate
+      const catSelect = document.getElementById("tender-category-select");
+      if (type === "IT") catSelect.value = "IT Hardware & Enterprise Workstations";
+      else if (type === "CCTV") catSelect.value = "CCTV Surveillance & Security Systems";
+      else if (type === "MEDICAL") catSelect.value = "Medical Devices & Hospital Telemetry";
+      else if (type === "SOLAR") catSelect.value = "Solar PV, Inverters & Clean Energy";
+      else if (type === "VEHICLE") catSelect.value = "Vehicles, Ambulances & Fleet Transportation";
+      handleCategoryChange(catSelect.value);
+    }
+
+    async function loadRecentTenders() {
+      const tbody = document.getElementById("recent-tenders-tbody");
+      try {
+        const res = await apiRequest("/api/tenders");
+        const tenders = (res.tenders || []).slice(0, 5);
+        if (!tenders.length) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No tenders published yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = tenders.map(t => `
+          <tr>
+            <td class="fw-semibold">
+              <a href="/officer/tender-details.html?tender_id=${t.id}" class="text-primary text-decoration-none" title="View Tender Details">
+                ${t.tender_code}
+              </a>
+            </td>
+            <td>
+              <div class="fw-semibold text-truncate" style="max-width:280px;" title="${t.title}">${t.title}</div>
+              <div class="text-muted" style="font-size:0.75rem;">${t.department}</div>
+            </td>
+            <td>${t.category || "-"}</td>
+            <td class="fw-semibold">${formatINR(t.estimated_value)}</td>
+            <td>${t.closing_date || "-"}</td>
+            <td><span class="badge bg-secondary">${t.bid_count || 0}</span></td>
+            <td>${renderStatusBadge(t.status)}</td>
+            <td>
+              <a href="/officer/tender-details.html?tender_id=${t.id}" class="btn btn-sm btn-outline-primary py-0 text-nowrap">Open</a>
+            </td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-2">Error loading recent tenders: ${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById("create-tender-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("submit-tender-btn");
+      btn.disabled = true;
+      btn.textContent = "Publishing Tender...";
+
+      try {
+        const rows = document.querySelectorAll("#specs-tbody tr");
+        const structured = [];
+        let summaryParts = [];
+        let ramVal = null;
+        let ssdVal = null;
+        let warrantyVal = null;
+
+        rows.forEach(r => {
+          const cat = r.querySelector(".spec-cat")?.value || "TECHNICAL";
+          const name = r.querySelector(".spec-name")?.value.trim();
+          const op = r.querySelector(".spec-op")?.value || ">=";
+          const val = r.querySelector(".spec-val")?.value.trim();
+          const unit = r.querySelector(".spec-unit")?.value.trim() || "";
+          const mandatory = r.querySelector(".spec-mandatory")?.checked ?? true;
+
+          if (name && val) {
+            structured.push({
+              category: cat,
+              parameter_name: name,
+              operator: op,
+              required_value: val,
+              unit: unit,
+              is_mandatory: mandatory
+            });
+            summaryParts.push(`${name} ${op} ${val}${unit ? ' ' + unit : ''}`);
+
+            const lower = name.toLowerCase();
+            if (lower === "ram" || lower.includes("memory")) ramVal = val;
+            if (lower === "ssd" || lower.includes("storage")) ssdVal = val;
+            if (lower.includes("warranty")) warrantyVal = val;
+          }
+        });
+
+        if (structured.length === 0) {
+          showAlert("create-tender-alert", "Please specify at least one technical or compliance requirement parameter.");
+          btn.disabled = false;
+          btn.textContent = "Save & Publish GeM Tender";
+          return;
+        }
+
+        const formData = new FormData(e.target);
+
+        // If custom category was chosen, override with custom input value
+        const catSelect = document.getElementById("tender-category-select");
+        if (catSelect.value === "CUSTOM") {
+          const customCat = document.getElementById("custom-category-input").value.trim();
+          if (customCat) {
+            formData.set("category", customCat);
+          }
+        }
+
+        // Attach structured requirements JSON
+        formData.set("structured_requirements", JSON.stringify(structured));
+
+        // Auto-populate technical requirements text if empty
+        const techSummary = document.getElementById("technical_requirements");
+        if (!techSummary.value.trim() || techSummary.value.includes("Comprehensive technical specifications")) {
+          formData.set("technical_requirements", summaryParts.join(", "));
+        }
+
+        // Pass backward-compatible fields if detected
+        if (ramVal) formData.set("req_ram_gb", ramVal);
+        if (ssdVal) formData.set("req_ssd_gb", ssdVal);
+        if (warrantyVal) formData.set("req_warranty_years", warrantyVal);
+
+        const res = await apiRequest("/api/tenders", {
+          method: "POST",
+          body: formData,
+        });
+
+        showAlert("create-tender-alert", `Tender <strong>${res.tender.tender_code}</strong> published successfully! Redirecting...`, "success");
+        loadRecentTenders();
+        setTimeout(() => {
+          window.location.href = `/officer/tender-details.html?tender_id=${res.tender.id}`;
+        }, 900);
+      } catch (err) {
+        showAlert("create-tender-alert", err.message);
+        btn.disabled = false;
+        btn.textContent = "Save & Publish GeM Tender";
+      }
+    });
+
+    // Initialize with default IT template so user starts with editable examples
+    loadTemplate("IT");
+    loadRecentTenders();
+  </script>
+</body>
+</html>
