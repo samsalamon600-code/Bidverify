@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://bidverify-backend-7frs.onrender.com/api/$1"
+      "source": "/(.*)",
+      "destination": "https://bidverify-backend-7frs.onrender.com/$1"
     }
   ]
 }

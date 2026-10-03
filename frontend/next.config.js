@@ -2,12 +2,14 @@
 const nextConfig = {
   reactStrictMode: false,
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://bidverify-backend-7frs.onrender.com/api/:path*',
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: '/:path*',
+          destination: 'https://bidverify-backend-7frs.onrender.com/:path*',
+        },
+      ],
+    };
   },
 };
 
